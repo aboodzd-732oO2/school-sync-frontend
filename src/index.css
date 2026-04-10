@@ -1,0 +1,257 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+
+@layer base {
+  :root {
+    /* Dark Forest Green Background */
+    --background: 142 50% 96%;
+    --foreground: 142 60% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 142 60% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 60% 15%;
+
+    /* Golden-Tan Primary (from logo) */
+    --primary: 38 85% 60%;
+    --primary-foreground: 142 60% 15%;
+
+    /* Dark Green Secondary */
+    --secondary: 142 50% 95%;
+    --secondary-foreground: 142 60% 20%;
+
+    --muted: 142 30% 92%;
+    --muted-foreground: 142 40% 35%;
+
+    /* Accent with Golden */
+    --accent: 38 75% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 142 30% 85%;
+    --input: 142 30% 90%;
+    --ring: 38 85% 60%;
+
+    --radius: 0.75rem;
+
+    /* Brand Colors - Dark Forest Green & Golden */
+    --brand-green-dark: 142 60% 20%;
+    --brand-green-medium: 142 50% 35%;
+    --brand-green-light: 142 40% 50%;
+    --brand-golden: 38 85% 60%;
+    --brand-golden-light: 38 75% 70%;
+    --brand-golden-dark: 38 90% 50%;
+    
+    /* Gradient colors - Brand Identity */
+    --gradient-primary: linear-gradient(135deg, hsl(142, 60%, 25%) 0%, hsl(142, 50%, 20%) 100%);
+    --gradient-golden: linear-gradient(135deg, hsl(38, 85%, 60%) 0%, hsl(38, 90%, 50%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(142, 50%, 35%) 0%, hsl(142, 60%, 25%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(38, 75%, 70%) 0%, hsl(38, 85%, 60%) 100%);
+    --gradient-brand: linear-gradient(135deg, hsl(142, 60%, 25%) 0%, hsl(38, 85%, 60%) 100%);
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Brand Gradient Backgrounds - Dark Forest Green & Golden */
+  .gradient-bg {
+    background: linear-gradient(135deg, hsl(142, 60%, 25%) 0%, hsl(142, 50%, 20%) 100%);
+  }
+  
+  .gradient-bg-golden {
+    background: linear-gradient(135deg, hsl(38, 85%, 60%) 0%, hsl(38, 90%, 50%) 100%);
+  }
+  
+  .gradient-bg-success {
+    background: linear-gradient(135deg, hsl(142, 50%, 35%) 0%, hsl(142, 60%, 25%) 100%);
+  }
+  
+  .gradient-bg-warning {
+    background: linear-gradient(135deg, hsl(38, 75%, 70%) 0%, hsl(38, 85%, 60%) 100%);
+  }
+  
+  .gradient-bg-brand {
+    background: linear-gradient(135deg, hsl(142, 60%, 25%) 0%, hsl(38, 85%, 60%) 100%);
+  }
+  
+  .gradient-bg-soft {
+    background: linear-gradient(135deg, hsl(142, 30%, 96%) 0%, hsl(142, 40%, 94%) 100%);
+  }
+  
+  /* Priority Badges with Brand Colors */
+  .priority-high {
+    @apply bg-gradient-to-r from-red-50 to-red-100 border-red-300 text-red-900 shadow-sm;
+  }
+  
+  .priority-medium {
+    @apply bg-gradient-to-r from-amber-50 to-amber-100 border-amber-300 text-amber-900 shadow-sm;
+  }
+  
+  .priority-low {
+    @apply bg-gradient-to-r from-green-50 to-green-100 border-green-300 text-green-900 shadow-sm;
+  }
+  
+  /* Professional Card Styles */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-md;
+  }
+  
+  /* Professional Shadow Styles */
+  .shadow-soft {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .shadow-medium {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  .shadow-strong {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  }
+  
+  /* Glass Morphism Effect */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Decorative Pattern Background */
+  .pattern-background {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .pattern-background::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    background-image: 
+      radial-gradient(circle at 20% 50%, hsl(38,85%,60%) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, hsl(38,85%,60%) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, hsl(38,85%,60%) 0%, transparent 50%);
+    background-size: 300px 300px, 400px 400px, 250px 250px;
+    background-position: 0% 0%, 100% 100%, 50% 0%;
+    animation: patternMove 20s ease-in-out infinite;
+  }
+  
+  @keyframes patternMove {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(-20px, -20px);
+    }
+  }
+  
+  /* Smooth Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Pattern Background Animation */
+  @keyframes patternMove {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 300px 300px;
+    }
+  }
+  
+  .pattern-bg-animated {
+    animation: patternMove 20s linear infinite;
+  }
+  
+  /* Icon Container Styles - Brand Colors */
+  .icon-container-primary {
+    @apply p-3 bg-gradient-to-br from-[hsl(142,60%,25%)] to-[hsl(142,50%,20%)] rounded-xl shadow-lg;
+  }
+  
+  .icon-container-golden {
+    @apply p-3 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg;
+  }
+  
+  .icon-container-green {
+    @apply p-3 bg-gradient-to-br from-[hsl(142,50%,35%)] to-[hsl(142,60%,25%)] rounded-xl shadow-lg;
+  }
+  
+  .icon-container-accent {
+    @apply p-3 bg-gradient-to-br from-[hsl(38,75%,70%)] to-[hsl(38,85%,60%)] rounded-xl shadow-lg;
+  }
+  
+  /* Legacy support */
+  .icon-container-blue {
+    @apply icon-container-primary;
+  }
+  
+  .icon-container-purple {
+    @apply icon-container-golden;
+  }
+  
+  .icon-container-orange {
+    @apply icon-container-accent;
+  }
+}

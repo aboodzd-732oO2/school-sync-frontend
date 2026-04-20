@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Package, Users, AlertTriangle, Clock, CheckCircle, AlertCircle, Save, Send } from "lucide-react";
+import { MapPin, Package, Users, AlertTriangle, Clock, CheckCircle, AlertCircle, Save, Send, Eye } from "lucide-react";
+import { getDepartmentIcon } from "@/lib/departmentIcons";
 import ItemsSidebar from "./ItemsSidebar";
 import SelectedItemsPanel from "./SelectedItemsPanel";
+import { lookup } from "@/services/api";
+import { useInstitutionTypes } from "@/hooks/useLookups";
 
 interface UserData {
   email: string;
@@ -66,110 +69,66 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
     priority: false,
   });
 
-  const departmentOptions = {
-    'materials': {
-      label: '📚 قسم المواد التعليمية',
-      subcategories: ['chairs', 'pens', 'boards', 'fans', 'blinds', 'air-conditioners', 'heaters', 'chalk', 'computers', 'projectors', 'other'],
-      routeTo: 'مستودع المواد التعليمية المركزي',
-      icon: '📦',
-      color: 'bg-blue-50 border-blue-200'
-    },
-    'maintenance': {
-      label: '🔧 قسم الصيانة',
-      subcategories: ['electrical-issues', 'water-issues', 'connections', 'building-repairs', 'cleaning', 'other'],
-      routeTo: 'مركز الصيانة والخدمات الفنية',
-      icon: '🛠️',
-      color: 'bg-orange-50 border-orange-200'
-    },
-    'academic-materials': {
-      label: '📖 قسم المواد الأكاديمية',
-      subcategories: ['textbooks', 'papers', 'notebooks', 'stationery', 'other'],
-      routeTo: 'مركز توزيع المناهج والكتب',
-      icon: '📚',
-      color: 'bg-green-50 border-green-200'
-    },
-    'technology': {
-      label: '💻 قسم التكنولوجيا',
-      subcategories: ['computers', 'software', 'network', 'audio-visual', 'other'],
-      routeTo: 'مركز تكنولوجيا المعلومات التعليمية',
-      icon: '🖥️',
-      color: 'bg-purple-50 border-purple-200'
-    },
-    'safety': {
-      label: '🛡️ قسم السلامة',
-      subcategories: ['fire-safety', 'security', 'emergency-equipment', 'other'],
-      routeTo: 'إدارة الأمن والسلامة المدرسية',
-      icon: '🚨',
-      color: 'bg-red-50 border-red-200'
+  const { getLabel: getInstitutionTypeLabel } = useInstitutionTypes();
+
+  // البيانات الديناميكية من API
+  const [departmentsList, setDepartmentsList] = useState<Array<{ key: string; labelAr: string; color: string; icon: string }>>([]);
+  const [currentItems, setCurrentItems] = useState<Array<{ key: string; labelAr: string; defaultUnit: string }>>([]);
+  const [prioritiesList, setPrioritiesList] = useState<Array<{ key: string; labelAr: string; color: string }>>([]);
+
+  // تحميل الأقسام والأولويات عند بداية التحميل
+  useEffect(() => {
+    lookup.departments().then(setDepartmentsList).catch(() => {});
+    lookup.priorities().then(setPrioritiesList).catch(() => {});
+  }, []);
+
+  // تحميل عناصر القسم عند تغييره
+  useEffect(() => {
+    if (formData.department) {
+      lookup.departmentItems(formData.department).then(setCurrentItems).catch(() => setCurrentItems([]));
+    } else {
+      setCurrentItems([]);
     }
+  }, [formData.department]);
+
+  const subcategoryLabels = useMemo(() => {
+    const map: Record<string, string> = { 'other': 'أخرى' };
+    currentItems.forEach(item => { map[item.key] = item.labelAr; });
+    return map;
+  }, [currentItems]);
+
+  const getUnitTypeForSubcategory = (subcategory: string): string => {
+    if (subcategory === 'other') return 'عنصر';
+    const item = currentItems.find(i => i.key === subcategory);
+    return item?.defaultUnit || 'قطعة';
   };
 
-  const subcategoryLabels: { [key: string]: string } = {
-    'chairs': '🪑 كراسي',
-    'pens': '✏️ أقلام',
-    'boards': '📋 ألواح',
-    'fans': '🌀 مراوح',
-    'blinds': '🪟 ستائر',
-    'air-conditioners': '❄️ مكيفات',
-    'heaters': '🔥 مدافئ',
-    'chalk': '✍️ طباشير',
-    'computers': '💻 حاسوب',
-    'projectors': '📽️ بروجكتر',
-    'electrical-issues': '⚡ مشاكل كهربائية',
-    'water-issues': '💧 مشاكل مياه',
-    'connections': '🔌 توصيلات',
-    'building-repairs': '🏗️ إصلاحات المبنى',
-    'cleaning': '🧹 تنظيف',
-    'textbooks': '📚 كتب مدرسية',
-    'papers': '📄 أوراق',
-    'notebooks': '📓 دفاتر',
-    'stationery': '📝 قرطاسية',
-    'software': '💾 برمجيات',
-    'network': '🌐 شبكة',
-    'audio-visual': '🎵 سمعي بصري',
-    'fire-safety': '🔥 السلامة من الحريق',
-    'security': '🔒 أمن',
-    'emergency-equipment': '🚨 معدات الطوارئ',
-    'other': '📝 أخرى'
-  };
+  // قائمة subcategories للقسم الحالي (تشمل "other")
+  const currentSubcategories = useMemo(() => {
+    return [...currentItems.map(i => i.key), 'other'];
+  }, [currentItems]);
 
-  const getUnitTypeForSubcategory = (subcategory: string) => {
-    const unitMap: { [key: string]: string } = {
-      'chairs': 'قطعة',
-      'pens': 'قطعة',
-      'boards': 'قطعة',
-      'fans': 'وحدة',
-      'blinds': 'مجموعة',
-      'air-conditioners': 'وحدة',
-      'heaters': 'وحدة',
-      'chalk': 'علبة',
-      'computers': 'وحدة',
-      'projectors': 'وحدة',
-      'textbooks': 'نسخة',
-      'papers': 'رزمة',
-      'notebooks': 'قطعة',
-      'stationery': 'مجموعة',
-      'electrical-issues': 'وحدة إضاءة',
-      'water-issues': 'موقع',
-      'connections': 'نقطة',
-      'building-repairs': 'منطقة',
-      'cleaning': 'غرفة',
-      'other': 'عنصر'
+  // اللون والأيقونة يجيان من API ديناميكياً
+  const currentDepartment = useMemo(() => {
+    const dept = departmentsList.find(d => d.key === formData.department);
+    if (!dept) return null;
+    return {
+      label: dept.labelAr,
+      subcategories: currentSubcategories,
+      routeTo: `مستودع ${dept.labelAr.replace(/^قسم\s*/, '')} في محافظتك`,
+      icon: dept.icon,
+      color: dept.color,
     };
-    return unitMap[subcategory] || 'عنصر';
-  };
+  }, [departmentsList, formData.department, currentSubcategories]);
 
   const getTotalQuantity = () => {
     return formData.subcategoryQuantities.reduce((total, item) => total + item.quantity, 0);
   };
 
   const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high': return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'medium': return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'low': return <CheckCircle className="h-4 w-4 text-green-600" />;
-      default: return null;
-    }
+    const p = prioritiesList.find(x => x.key === priority);
+    if (!p) return null;
+    return <AlertTriangle className="h-4 w-4" style={{ color: p.color }} />;
   };
 
   const validateForm = () => {
@@ -246,7 +205,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
       id: Date.now().toString(),
       dateSubmitted: new Date().toISOString(),
       status: status, // This will be 'draft' or 'pending' based on the button clicked
-      routedTo: departmentOptions[formData.department as keyof typeof departmentOptions]?.routeTo || 'جهة غير معروفة',
+      routedTo: currentDepartment?.routeTo || 'جهة غير معروفة',
       unitType: 'متنوع',
       quantity: getTotalQuantity(),
       studentsAffected: formData.studentsAffected ? parseInt(formData.studentsAffected) : 0,
@@ -279,7 +238,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
 
     if (createRequest('draft')) {
       toast({
-        title: "تم حفظ الطلب كمسودة! 📝",
+        title: "تم حفظ الطلب كمسودة",
         description: "يمكنك العودة لتعديله وإرساله لاحقاً."
       });
       resetForm();
@@ -300,7 +259,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
 
     if (createRequest('pending')) { // Change status to 'pending' when sending to warehouse
       toast({
-        title: "تم إرسال الطلب بنجاح! ✅",
+        title: "تم إرسال الطلب بنجاح",
         description: `تم توجيه طلبك بإجمالي ${getTotalQuantity()} عنصر إلى المستودع.`
       });
       resetForm();
@@ -385,17 +344,15 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
     }
   };
 
-  const currentDepartment = departmentOptions[formData.department as keyof typeof departmentOptions];
-
   const getFieldClassName = (fieldName: keyof ValidationErrors, baseClassName: string = '') => {
     const hasError = touched[fieldName] && errors[fieldName];
-    return `${baseClassName} ${hasError ? 'border-red-500 focus-visible:ring-red-500' : ''}`.trim();
+    return `${baseClassName} ${hasError ? 'border-danger focus-visible:ring-danger' : ''}`.trim();
   };
 
   const renderFieldError = (fieldName: keyof ValidationErrors, message: string) => {
     if (touched[fieldName] && errors[fieldName]) {
       return (
-        <div className="flex items-center space-x-1 space-x-reverse text-red-600 text-sm mt-1">
+        <div className="flex items-center space-x-1 space-x-reverse text-danger text-sm mt-1">
           <AlertCircle className="h-4 w-4" />
           <span>{message}</span>
         </div>
@@ -407,7 +364,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">📝 تقديم طلب جديد</CardTitle>
+        <CardTitle className="text-2xl">تقديم طلب جديد</CardTitle>
         <CardDescription>
           املأ النموذج أدناه لتقديم طلب صيانة مفصل أو احتياج من المواد.
         </CardDescription>
@@ -415,24 +372,24 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
       <CardContent>
         <form className="space-y-6">
           {/* Institution info - read-only fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
             <div className="space-y-2">
-              <Label htmlFor="institutionType">🏫 نوع المؤسسة التعليمية</Label>
+              <Label htmlFor="institutionType">نوع المؤسسة التعليمية</Label>
               <Input
                 id="institutionType"
-                value={formData.institutionType === 'school' ? 'مدرسة' : 'جامعة'}
+                value={getInstitutionTypeLabel(formData.institutionType)}
                 readOnly
-                className="bg-white"
+                className="bg-muted"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">🏢 اسم المؤسسة التعليمية</Label>
+              <Label htmlFor="location">اسم المؤسسة التعليمية</Label>
               <Input
                 id="location"
                 value={formData.location}
                 readOnly
-                className="bg-white"
+                className="bg-muted"
               />
             </div>
           </div>
@@ -441,7 +398,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="department" className="text-lg font-semibold">
-                🎯 اختيار نوع الطلب *
+                اختيار نوع الطلب *
               </Label>
               <Select 
                 value={formData.department} 
@@ -454,15 +411,12 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
                 onOpenChange={() => handleFieldBlur('department')}
               >
                 <SelectTrigger className={getFieldClassName('department', 'h-12')}>
-                  <SelectValue placeholder="📋 اختر القسم المناسب" />
+                  <SelectValue placeholder="اختر القسم المناسب" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(departmentOptions).map(([key, dept]) => (
-                    <SelectItem key={key} value={key} className="py-3">
-                      <div className="flex items-center space-x-2 space-x-reverse">
-                        <span className="text-lg">{dept.icon}</span>
-                        <span>{dept.label}</span>
-                      </div>
+                  {departmentsList.map(dept => (
+                    <SelectItem key={dept.key} value={dept.key} className="py-3">
+                      <span>{dept.labelAr}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -470,22 +424,25 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
               {renderFieldError('department', 'يرجى اختيار نوع الطلب')}
             </div>
 
-            {currentDepartment && (
-              <div className={`p-4 rounded-lg border ${currentDepartment.color}`}>
-                <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                  <span className="text-xl">{currentDepartment.icon}</span>
+            {currentDepartment && (() => {
+              const DeptIcon = getDepartmentIcon(currentDepartment.icon);
+              return (
+              <div className="p-4 rounded-lg border" style={{ backgroundColor: `${currentDepartment.color}15`, borderColor: `${currentDepartment.color}50` }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <DeptIcon className="size-5" style={{ color: currentDepartment.color }} />
                   <h3 className="font-semibold">{currentDepartment.label}</h3>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   سيتم توجيه طلبك إلى: <strong>{currentDepartment.routeTo}</strong>
                 </p>
               </div>
-            )}
+              );
+            })()}
 
             <div className="space-y-4">
-              <Label className="text-base font-semibold flex items-center space-x-2 space-x-reverse">
-                <Package className="h-5 w-5 text-blue-600" />
-                <span>🔍 التفصيل المحدد * (يمكن اختيار أكثر من عنصر مع تحديد الكمية لكل عنصر)</span>
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Package className="h-5 w-5 text-info" />
+                <span>التفصيل المحدد * (يمكن اختيار أكثر من عنصر مع تحديد الكمية لكل عنصر)</span>
               </Label>
               {currentDepartment && (
                 <>
@@ -524,7 +481,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
                 </>
               )}
               {!currentDepartment && (
-                <p className="text-sm text-gray-500 p-3 bg-gray-50 rounded">
+                <p className="text-sm text-muted-foreground p-3 bg-muted/30 rounded">
                   يرجى اختيار القسم أولاً لإظهار التفاصيل المتاحة
                 </p>
               )}
@@ -532,7 +489,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">📝 عنوان الطلب *</Label>
+            <Label htmlFor="title">عنوان الطلب *</Label>
             <Input
               id="title"
               value={formData.title}
@@ -565,7 +522,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">📄 الوصف التفصيلي *</Label>
+            <Label htmlFor="description">الوصف التفصيلي *</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -584,7 +541,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="priority">⚡ مستوى الأولوية *</Label>
+            <Label htmlFor="priority">مستوى الأولوية *</Label>
             <Select 
               value={formData.priority} 
               onValueChange={(value) => {
@@ -599,31 +556,21 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
                 <SelectValue placeholder="اختر الأولوية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="high" className="text-red-600">
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>🔴 عالية - عاجل</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="medium" className="text-yellow-600">
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Clock className="h-4 w-4" />
-                    <span>🟡 متوسطة - خلال أسبوع</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="low" className="text-green-600">
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>🟢 منخفضة - حسب الإمكان</span>
-                  </div>
-                </SelectItem>
+                {prioritiesList.map(p => (
+                  <SelectItem key={p.key} value={p.key}>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }}></div>
+                      <span>{p.labelAr}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {renderFieldError('priority', 'يرجى اختيار مستوى الأولوية')}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="impact">📊 التأثير على العملية التعليمية</Label>
+            <Label htmlFor="impact">التأثير على العملية التعليمية</Label>
             <Textarea
               id="impact"
               value={formData.impact}
@@ -635,9 +582,9 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
 
           {/* Enhanced Preview Section */}
           {formData.department && formData.subcategoryQuantities.length > 0 && (
-            <div className="p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-lg mb-3 flex items-center space-x-2 space-x-reverse">
-                <span>👁️</span>
+            <div className="p-6 bg-info/10 rounded-lg border border-info/30">
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Eye className="size-5 text-info" />
                 <span>معاينة الطلب</span>
               </h3>
               <div className="space-y-2 text-sm">
@@ -648,7 +595,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
                 <div className="space-y-1">
                   <span className="font-medium">التفاصيل والكميات:</span>
                   {formData.subcategoryQuantities.map((item) => (
-                    <div key={item.subcategory} className="mr-4 flex justify-between text-xs bg-white p-2 rounded">
+                    <div key={item.subcategory} className="ms-4 flex justify-between text-xs bg-card p-2 rounded">
                       <span>
                         {item.subcategory === 'other' ? item.customDetails : subcategoryLabels[item.subcategory] || item.subcategory}
                       </span>
@@ -658,19 +605,19 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">إجمالي الكمية:</span>
-                  <span className="font-bold text-blue-700">{getTotalQuantity()}</span>
+                  <span className="font-bold text-info">{getTotalQuantity()}</span>
                 </div>
                 {formData.priority && (
                   <div className="flex justify-between items-center">
                     <span className="font-medium">الأولوية:</span>
                     <div className="flex items-center space-x-1 space-x-reverse">
-                      <span>{formData.priority === 'high' ? '🔴 عالية' : formData.priority === 'medium' ? '🟡 متوسطة' : '🟢 منخفضة'}</span>
+                      <span>{prioritiesList.find(p => p.key === formData.priority)?.labelAr || formData.priority}</span>
                     </div>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="font-medium">سيتم التوجيه إلى:</span>
-                  <span className="text-blue-700 font-medium">{currentDepartment?.routeTo}</span>
+                  <span className="text-info font-medium">{currentDepartment?.routeTo}</span>
                 </div>
               </div>
             </div>
@@ -684,8 +631,8 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
               variant="outline" 
               className="h-12 text-lg"
             >
-              <Save className="h-5 w-5 ml-2" />
-              💾 حفظ كمسودة
+              <Save className="h-5 w-5 me-2" />
+              حفظ كمسودة
             </Button>
             
             <Button 
@@ -693,8 +640,8 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
               onClick={handleSendToWarehouse}
               className="h-12 text-lg"
             >
-              <Send className="h-5 w-5 ml-2" />
-              🚀 إرسال إلى المستودع
+              <Send className="h-5 w-5 me-2" />
+              إرسال إلى المستودع
             </Button>
           </div>
         </form>

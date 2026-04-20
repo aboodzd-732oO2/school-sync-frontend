@@ -6,13 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Package, Hash, Eye, Play, Search, Building, Warehouse, Filter, AlertTriangle, List, Undo2, RefreshCw, X } from "lucide-react";
+import { Calendar, MapPin, AlertCircle, CheckCircle, Clock, Package, Hash, Eye, Play, Search, Building, Warehouse, Filter, AlertTriangle, List, Undo2, RefreshCw, X, ClipboardList, FileText, School, GraduationCap, Info, Circle, Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RequestDetailsModal from "@/components/RequestDetailsModal";
 import StatsDetailsModal from "@/components/StatsDetailsModal";
 import RejectRequestDialog from "@/components/RejectRequestDialog";
 import InventoryManagement from "@/components/InventoryManagement";
+import { StatCard } from "@/components/common/StatCard";
+import { EmptyState } from "@/components/common/EmptyState";
 import { InventoryService } from "@/services/inventoryService";
+import { useDepartments, usePriorities, useInstitutionTypes } from "@/hooks/useLookups";
+import { getStatusLabel, getStatusClass, getStatusIcon as getStatusIconFromConfig } from "@/lib/statusConfig";
 
 interface Request {
   id: string;
@@ -56,6 +60,7 @@ type UserData = {
   loginTime: string;
   userType: 'warehouse';
   warehouseName: string;
+  departmentKey?: string;
   institutionType?: never;
   institutionName?: never;
 };
@@ -90,30 +95,14 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
     data: null
   });
 
-  // Warehouse specialization mapping
-  const getWarehouseDepartment = (warehouseName: string): string => {
-    // Extract the warehouse type from the full name (before the " - " separator)
-    const warehouseType = warehouseName.split(' - ')[0];
-    const warehouseMapping: Record<string, string> = {
-      'مستودع المواد والأثاث التعليمي': 'materials',
-      'مستودع الصيانة والإصلاح': 'maintenance',
-      'مستودع المواد الأكاديمية والكتب': 'academic-materials',
-      'مستودع التقنيات التعليمية': 'technology',
-      'مستودع السلامة والأمان': 'safety'
-    };
-    return warehouseMapping[warehouseType] || 'materials';
-  };
+  // قسم المستودع يجي مباشرة من /auth/me (مخزّن في user.departmentKey)
+  const warehouseDepartment = user.departmentKey || 'materials';
+  const { getLabel: getDeptLabel } = useDepartments();
+  const warehouseDepartmentDisplay = getDeptLabel(warehouseDepartment).replace(/^قسم\s*/, '');
 
-  const departmentTranslations: { [key: string]: string } = {
-    'materials': 'المواد والأثاث',
-    'maintenance': 'الصيانة والإصلاح',
-    'academic-materials': 'المواد الأكاديمية والكتب',
-    'technology': 'التقنيات التعليمية',
-    'safety': 'السلامة والأمان'
-  };
-
-  const warehouseDepartment = getWarehouseDepartment(user.warehouseName);
-  const warehouseDepartmentDisplay = departmentTranslations[warehouseDepartment];
+  // hooks الديناميكية
+  const { getLabel: getPriorityLabel, getColor: getPriorityHexColor, isHighPriority } = usePriorities();
+  const { getLabel: getInstitutionTypeLabel } = useInstitutionTypes();
 
   // Filter requests - only show requests for this warehouse's department (excluding draft)
   const warehouseRequests = requests.filter(request => 
@@ -158,63 +147,23 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
     setRejectingRequest(null);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'in-progress': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'completed': return 'bg-green-100 text-green-800 border-green-300';
-      case 'undelivered': return 'bg-red-100 text-red-800 border-red-300';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-300';
-      case 'cancelled': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
+  const getStatusColor = (status: string) => getStatusClass(status);
+  const getStatusText = (status: string) => getStatusLabel(status);
+  const getStatusIconEmoji = (status: string) => {
+    const Icon = getStatusIconFromConfig(status);
+    return <Icon className="size-3.5" />;
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return '⏳ قيد الانتظار';
-      case 'in-progress': return '🔄 قيد التنفيذ';
-      case 'completed': return '✅ مكتمل';
-      case 'undelivered': return '🔄 لم يتم الاستلام - مُرجع للمخزون';
-      case 'rejected': return '❌ مرفوض';
-      case 'cancelled': return '🚫 ملغي من المؤسسة';
-      default: return status;
-    }
-  };
+  // inline styles باستخدام اللون من API
+  const getPriorityStyle = (priority: string) => ({
+    backgroundColor: `${getPriorityHexColor(priority)}20`,
+    color: getPriorityHexColor(priority),
+    borderColor: `${getPriorityHexColor(priority)}50`,
+  });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'in-progress': return <AlertCircle className="h-4 w-4" />;
-      case 'completed': return <CheckCircle className="h-4 w-4" />;
-      case 'undelivered': return <Undo2 className="h-4 w-4" />;
-      case 'rejected': return <X className="h-4 w-4" />;
-      case 'cancelled': return <X className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
-  };
+  const getPriorityText = (priority: string) => getPriorityLabel(priority);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-300';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'low': return 'bg-green-100 text-green-800 border-green-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'high': return '🔴 عالية';
-      case 'medium': return '🟡 متوسطة';
-      case 'low': return '🟢 منخفضة';
-      default: return priority;
-    }
-  };
-
-  const getInstitutionTypeText = (type: string) => {
-    return type === 'school' ? '🏫 مدرسة' : '🎓 جامعة';
-  };
+  const getInstitutionTypeText = (type: string) => getInstitutionTypeLabel(type);
 
   const handleViewDetails = (request: Request) => {
     setSelectedRequest(request);
@@ -233,8 +182,6 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
 
       for (const item of request.requestedItems) {
         const stockCheck = await InventoryService.checkStockAvailability(
-          user.warehouseName,
-          warehouseDepartment,
           item.itemName,
           item.quantity
         );
@@ -255,8 +202,6 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
       }
     } else {
       const stockCheck = await InventoryService.checkStockAvailability(
-        user.warehouseName,
-        warehouseDepartment,
         request.title,
         request.quantity
       );
@@ -445,7 +390,7 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
     completed: warehouseRequests.filter(r => r.status === 'completed').length,
     undelivered: warehouseRequests.filter(r => r.status === 'undelivered').length,
     rejected: warehouseRequests.filter(r => r.status === 'rejected').length,
-    highPriority: warehouseRequests.filter(r => r.priority === 'high').length,
+    highPriority: warehouseRequests.filter(r => isHighPriority(r.priority)).length,
     totalQuantity: calculateTotalQuantity(),
     schools: warehouseRequests.filter(r => r.institutionType === 'school').length,
     universities: warehouseRequests.filter(r => r.institutionType === 'university').length
@@ -471,7 +416,7 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
         filteredRequestsForModal = warehouseRequests.filter(r => r.status === 'rejected');
         break;
       case 'highPriority':
-        filteredRequestsForModal = warehouseRequests.filter(r => r.priority === 'high');
+        filteredRequestsForModal = warehouseRequests.filter(r => isHighPriority(r.priority));
         break;
       case 'schools':
         filteredRequestsForModal = warehouseRequests.filter(r => r.institutionType === 'school');
@@ -498,15 +443,14 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
   return (
     <div className="space-y-6">
       {/* Warehouse Header */}
-      <div className="text-center mb-8 p-6 bg-gradient-to-r from-[hsl(142,60%,25%)] via-[hsl(142,50%,20%)] to-[hsl(142,60%,25%)] rounded-2xl shadow-lg border border-[hsl(142,50%,15%)]">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          <Warehouse className="inline h-8 w-8 mr-2" />
-          {user.warehouseName}
-        </h1>
-        <p className="text-white/90 font-medium">إدارة طلبات {warehouseDepartmentDisplay}</p>
-        <div className="mt-2 p-3 bg-white/20 rounded-lg border border-white/30 backdrop-blur-sm">
-          <p className="text-sm text-white">
-            🎯 <strong>تخصصك:</strong> معالجة طلبات "{warehouseDepartmentDisplay}" من جميع المؤسسات التعليمية في نفس المحافظة
+      <div className="mb-2 flex items-start gap-3">
+        <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Warehouse className="size-5" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">{user.warehouseName}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            معالجة طلبات <span className="font-medium text-foreground">{warehouseDepartmentDisplay}</span> من مؤسسات المحافظة
           </p>
         </div>
       </div>
@@ -514,214 +458,168 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
       {/* Tabs for Requests and Inventory */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="requests">📋 إدارة الطلبات</TabsTrigger>
-          <TabsTrigger value="inventory">📦 إدارة المخزون</TabsTrigger>
+          <TabsTrigger value="requests" className="gap-2">
+            <ClipboardList className="size-4" />
+            إدارة الطلبات
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="gap-2">
+            <Package className="size-4" />
+            إدارة المخزون
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="requests" className="space-y-6">
           {/* Warehouse Stats - including rejected */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={() => openStatsModal('total', 'إجمالي الطلبات')}>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="icon-container-primary">
-                    <Hash className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-[hsl(142,60%,25%)]">{stats.total}</p>
-                    <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">📋 إجمالي الطلبات</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" onClick={() => {
-              const detailedItemsData = getDetailedItemsData();
-              openStatsModal('detailed-items', 'تفاصيل إجمالي العناصر المطلوبة', detailedItemsData);
-            }}>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="icon-container-golden">
-                    <Package className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-[hsl(38,85%,60%)]">{stats.totalQuantity}</p>
-                    <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">📦 إجمالي العناصر المطلوبة</p>
-                    <p className="text-xs text-gray-600 mt-1">انقر لرؤية تفاصيل العناصر</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              label="إجمالي الطلبات"
+              value={stats.total}
+              icon={ClipboardList}
+              tone="primary"
+              onClick={() => openStatsModal('total', 'إجمالي الطلبات')}
+            />
+            <StatCard
+              label="إجمالي العناصر المطلوبة"
+              value={stats.totalQuantity}
+              icon={Package}
+              tone="warning"
+              hint="انقر لرؤية تفاصيل العناصر"
+              onClick={() => {
+                const detailedItemsData = getDetailedItemsData();
+                openStatsModal('detailed-items', 'تفاصيل إجمالي العناصر المطلوبة', detailedItemsData);
+              }}
+            />
           </div>
 
-          {/* Status Overview for Warehouse - including undelivered and rejected */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" onClick={() => openStatsModal('pending', 'الطلبات قيد الانتظار')}>
-              <CardContent className="p-5">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="p-2.5 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg">
-                    <Clock className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-2xl font-bold text-[hsl(38,85%,60%)]">{stats.pending}</p>
-                    <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">⏳ قيد الانتظار</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={() => openStatsModal('inProgress', 'الطلبات قيد التنفيذ')}>
-              <CardContent className="p-5">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="p-2.5 bg-gradient-to-br from-[hsl(142,50%,35%)] to-[hsl(142,60%,25%)] rounded-xl shadow-lg">
-                    <AlertCircle className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-2xl font-bold text-[hsl(142,60%,25%)]">{stats.inProgress}</p>
-                    <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">🔄 قيد التنفيذ</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={() => openStatsModal('completed', 'الطلبات المكتملة')}>
-              <CardContent className="p-5">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="p-2.5 bg-gradient-to-br from-[hsl(142,50%,35%)] to-[hsl(142,60%,25%)] rounded-xl shadow-lg">
-                    <CheckCircle className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-2xl font-bold text-[hsl(142,60%,25%)]">{stats.completed}</p>
-                    <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">✅ مكتمل</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" onClick={() => openStatsModal('undelivered', 'الطلبات غير المستلمة')}>
-              <CardContent className="p-5">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="p-2.5 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg">
-                    <Undo2 className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-2xl font-bold text-[hsl(38,85%,60%)]">{stats.undelivered}</p>
-                    <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">🔄 غير مستلم</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" onClick={() => openStatsModal('rejected', 'الطلبات المرفوضة')}>
-              <CardContent className="p-5">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="p-2.5 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg">
-                    <X className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-2xl font-bold text-[hsl(38,85%,60%)]">{stats.rejected}</p>
-                    <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">❌ مرفوض</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" onClick={() => openStatsModal('highPriority', 'الطلبات عالية الأولوية')}>
-              <CardContent className="p-5">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="p-2.5 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg">
-                    <AlertCircle className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-2xl font-bold text-[hsl(38,85%,60%)]">{stats.highPriority}</p>
-                    <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">🔴 أولوية عالية</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Status Overview for Warehouse */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <StatCard
+              label="قيد الانتظار"
+              value={stats.pending}
+              icon={Clock}
+              tone="warning"
+              onClick={() => openStatsModal('pending', 'الطلبات قيد الانتظار')}
+            />
+            <StatCard
+              label="قيد التنفيذ"
+              value={stats.inProgress}
+              icon={RefreshCw}
+              tone="primary"
+              onClick={() => openStatsModal('inProgress', 'الطلبات قيد التنفيذ')}
+            />
+            <StatCard
+              label="مكتمل"
+              value={stats.completed}
+              icon={CheckCircle}
+              tone="success"
+              onClick={() => openStatsModal('completed', 'الطلبات المكتملة')}
+            />
+            <StatCard
+              label="غير مستلم"
+              value={stats.undelivered}
+              icon={Undo2}
+              tone="warning"
+              onClick={() => openStatsModal('undelivered', 'الطلبات غير المستلمة')}
+            />
+            <StatCard
+              label="مرفوض"
+              value={stats.rejected}
+              icon={X}
+              tone="danger"
+              onClick={() => openStatsModal('rejected', 'الطلبات المرفوضة')}
+            />
+            <StatCard
+              label="أولوية عالية"
+              value={stats.highPriority}
+              icon={Flame}
+              tone="danger"
+              onClick={() => openStatsModal('highPriority', 'الطلبات عالية الأولوية')}
+            />
           </div>
 
           {/* Institution Types Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={() => {
-              const schoolsData = getInstitutionsData('school');
-              openStatsModal('schools', 'تفاصيل طلبات المدارس', schoolsData);
-            }}>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="icon-container-green">
-                    <Building className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-[hsl(142,60%,25%)]">{stats.schools}</p>
-                    <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">🏫 طلبات من المدارس</p>
-                    <p className="text-xs text-gray-600 mt-1">انقر لرؤية تفاصيل المدارس</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={() => {
-              const universitiesData = getInstitutionsData('university');
-              openStatsModal('universities', 'تفاصيل طلبات الجامعات', universitiesData);
-            }}>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="icon-container-primary">
-                    <Building className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-[hsl(142,60%,25%)]">{stats.universities}</p>
-                    <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">🎓 طلبات من الجامعات</p>
-                    <p className="text-xs text-gray-600 mt-1">انقر لرؤية تفاصيل الجامعات</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              label="طلبات من المدارس"
+              value={stats.schools}
+              icon={School}
+              tone="success"
+              hint="انقر لرؤية تفاصيل المدارس"
+              onClick={() => {
+                const schoolsData = getInstitutionsData('school');
+                openStatsModal('schools', 'تفاصيل طلبات المدارس', schoolsData);
+              }}
+            />
+            <StatCard
+              label="طلبات من الجامعات"
+              value={stats.universities}
+              icon={GraduationCap}
+              tone="info"
+              hint="انقر لرؤية تفاصيل الجامعات"
+              onClick={() => {
+                const universitiesData = getInstitutionsData('university');
+                openStatsModal('universities', 'تفاصيل طلبات الجامعات', universitiesData);
+              }}
+            />
           </div>
 
           {/* Requests List for Warehouse */}
-          <Card className="border-[hsl(142,30%,85%)]">
-            <CardHeader className="bg-gradient-to-r from-[hsl(142,60%,25%)] to-[hsl(142,50%,20%)] text-white">
-              <CardTitle className="flex items-center space-x-2 space-x-reverse text-white">
-                <span>📋</span>
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="size-5 text-primary" />
                 <span>طلبات قسم {warehouseDepartmentDisplay}</span>
               </CardTitle>
-              <CardDescription className="text-white/90">
-                جميع الطلبات الواردة من المؤسسات التعليمية لقسم {warehouseDepartmentDisplay} في نفس المحافظة
+              <CardDescription>
+                الطلبات الواردة من المؤسسات التعليمية في المحافظة
               </CardDescription>
-              
+
               {/* Search and Filter Bar */}
-              <div className="flex items-center space-x-2 space-x-reverse mt-4">
+              <div className="flex items-center gap-2 mt-4">
                 <div className="relative flex-1">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder={`🔍 ابحث في طلبات قسم ${warehouseDepartmentDisplay}...`}
+                    placeholder={`ابحث في طلبات قسم ${warehouseDepartmentDisplay}...`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10"
+                    className="ps-10"
                   />
                 </div>
-                
+
                 {/* Priority Filter */}
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Filter className="h-4 w-4 text-gray-600" />
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-48 bg-white">
+                    <SelectTrigger className="w-48 bg-card">
                       <SelectValue placeholder="فلترة حسب الأهمية" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border shadow-lg z-50">
+                    <SelectContent className="bg-card border shadow-lg z-50">
                       <SelectItem value="all">جميع المستويات</SelectItem>
-                      <SelectItem value="high">🔴 عالية الأهمية</SelectItem>
-                      <SelectItem value="medium">🟡 متوسطة الأهمية</SelectItem>
-                      <SelectItem value="low">🟢 منخفضة الأهمية</SelectItem>
+                      <SelectItem value="high">
+                        <span className="flex items-center gap-2">
+                          <Circle className="size-3 fill-danger text-danger" />
+                          عالية الأهمية
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="medium">
+                        <span className="flex items-center gap-2">
+                          <Circle className="size-3 fill-warning text-warning" />
+                          متوسطة الأهمية
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="low">
+                        <span className="flex items-center gap-2">
+                          <Circle className="size-3 fill-success text-success" />
+                          منخفضة الأهمية
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 {(searchTerm || priorityFilter !== "all") && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => {
                       setSearchTerm("");
@@ -732,26 +630,33 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                   </Button>
                 )}
               </div>
-              
+
               {/* Search and Filter Results Summary */}
               {(searchTerm || priorityFilter !== "all") && (
-                <div className="text-sm text-gray-600 mt-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                   {filteredRequests.length === 0 ? (
-                    <span>❌ لم يتم العثور على نتائج بالفلاتر المحددة</span>
+                    <>
+                      <X className="size-4 text-danger" />
+                      <span>لم يتم العثور على نتائج بالفلاتر المحددة</span>
+                    </>
                   ) : (
-                    <span>✅ تم العثور على {filteredRequests.length} نتيجة 
-                      {searchTerm && ` للبحث عن "${searchTerm}"`}
-                      {priorityFilter !== "all" && ` مع الأهمية: ${getPriorityText(priorityFilter)}`}
-                    </span>
+                    <>
+                      <CheckCircle className="size-4 text-success" />
+                      <span>تم العثور على {filteredRequests.length} نتيجة
+                        {searchTerm && ` للبحث عن "${searchTerm}"`}
+                        {priorityFilter !== "all" && ` مع الأهمية: ${getPriorityText(priorityFilter)}`}
+                      </span>
+                    </>
                   )}
                 </div>
               )}
 
               {/* Info message if no requests */}
               {warehouseRequests.length === 0 && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700">
-                    ℹ️ <strong>ملاحظة:</strong> لا توجد طلبات متخصصة لقسم "{warehouseDepartmentDisplay}" حالياً.
+                <div className="mt-4 p-3 bg-info/10 rounded-lg border border-info/30 flex items-start gap-2">
+                  <Info className="size-5 text-info shrink-0 mt-0.5" />
+                  <p className="text-sm text-info">
+                    <strong>ملاحظة:</strong> لا توجد طلبات متخصصة لقسم "{warehouseDepartmentDisplay}" حالياً.
                     <br />
                     الطلبات تظهر هنا فقط بعد إرسالها من المؤسسات التعليمية (ليس المسودات).
                   </p>
@@ -760,62 +665,60 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
             </CardHeader>
             <CardContent>
               {filteredRequests.length === 0 ? (
-                <div className="text-center py-12">
-                  {searchTerm || priorityFilter !== "all" ? (
-                    <>
-                      <div className="text-6xl mb-4">🔍</div>
-                      <p className="text-gray-500 text-lg">لم يتم العثور على طلبات بالفلاتر المحددة</p>
-                      <p className="text-gray-400 text-sm mt-2">جرب تغيير الفلاتر أو امسحها لعرض جميع الطلبات</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-6xl mb-4">📦</div>
-                      <p className="text-gray-500 text-lg">لا توجد طلبات متخصصة لقسم "{warehouseDepartmentDisplay}" بعد.</p>
-                      <p className="text-gray-400 text-sm mt-2">ستظهر هنا الطلبات المتخصصة عند إرسالها من المؤسسات التعليمية.</p>
-                    </>
-                  )}
-                </div>
+                searchTerm || priorityFilter !== "all" ? (
+                  <EmptyState
+                    icon={Search}
+                    title="لم يتم العثور على طلبات بالفلاتر المحددة"
+                    description="جرب تغيير الفلاتر أو امسحها لعرض جميع الطلبات"
+                  />
+                ) : (
+                  <EmptyState
+                    icon={Package}
+                    title={`لا توجد طلبات متخصصة لقسم "${warehouseDepartmentDisplay}" بعد`}
+                    description="ستظهر هنا الطلبات المتخصصة عند إرسالها من المؤسسات التعليمية"
+                  />
+                )
               ) : (
                 <div className="space-y-4">
                   {filteredRequests.map((request) => (
-                    <div key={request.id} className="border rounded-lg p-6 hover:bg-gray-50 transition-all duration-200 hover:shadow-md">
+                    <div key={request.id} className="border rounded-lg p-6 hover:bg-muted/30 hover:shadow-md transition-[background-color,box-shadow]">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3 space-x-reverse mb-3">
+                          <div className="flex items-center gap-3 mb-3">
                             <h3 className="font-semibold text-lg">{request.title}</h3>
-                            <Badge className={`${getPriorityColor(request.priority)} border`}>
+                            <Badge className="border" style={getPriorityStyle(request.priority)}>
                               {getPriorityText(request.priority)}
                             </Badge>
                             <Badge className={`${getStatusColor(request.status)} border`}>
-                              <div className="flex items-center space-x-1 space-x-reverse">
-                                {getStatusIcon(request.status)}
+                              <div className="flex items-center gap-1">
+                                {getStatusIconEmoji(request.status)}
                                 <span>{getStatusText(request.status)}</span>
                               </div>
                             </Badge>
-                            <Badge variant="outline" className="border-gray-300">
+                            <Badge variant="outline" className="border-border">
                               {getInstitutionTypeText(request.institutionType)}
                             </Badge>
                           </div>
                           
                           {/* Sender institution name */}
                           <div className="mb-3">
-                            <div className="flex items-center space-x-2 space-x-reverse bg-[hsl(142,30%,96%)] p-3 rounded-lg border border-[hsl(142,30%,85%)]">
-                              <Building className="h-5 w-5 text-[hsl(142,60%,25%)]" />
-                              <span className="font-medium text-[hsl(142,60%,20%)]">الجهة المرسلة:</span>
-                              <span className="font-bold text-[hsl(142,60%,25%)]">{request.location}</span>
+                            <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg border border-border">
+                              <Building className="h-5 w-5 text-primary" />
+                              <span className="font-medium text-primary">الجهة المرسلة:</span>
+                              <span className="font-bold text-primary">{request.location}</span>
                             </div>
                           </div>
 
                           {/* Display rejection reason if rejected */}
                           {request.status === 'rejected' && request.rejectionReason && (
-                            <div className="mb-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                              <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                                <X className="h-5 w-5 text-red-600" />
-                                <span className="font-medium text-red-700">سبب الرفض:</span>
+                            <div className="mb-3 p-3 bg-danger/10 rounded-lg border border-danger/30">
+                              <div className="flex items-center gap-2 mb-2">
+                                <X className="h-5 w-5 text-danger" />
+                                <span className="font-medium text-danger">سبب الرفض:</span>
                               </div>
-                              <p className="text-red-800 text-sm">{request.rejectionReason}</p>
+                              <p className="text-danger text-sm">{request.rejectionReason}</p>
                               {request.rejectionDate && (
-                                <p className="text-red-600 text-xs mt-1">
+                                <p className="text-danger text-xs mt-1">
                                   تاريخ الرفض: {new Date(request.rejectionDate).toLocaleString('ar-EG')}
                                 </p>
                               )}
@@ -824,14 +727,14 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
 
                           {/* Display cancellation reason if cancelled */}
                           {request.status === 'cancelled' && request.cancellationReason && (
-                            <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                              <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                                <X className="h-5 w-5 text-gray-600" />
-                                <span className="font-medium text-gray-700">سبب الإلغاء من المؤسسة:</span>
+                            <div className="mb-3 p-3 bg-muted/30 rounded-lg border border-border">
+                              <div className="flex items-center gap-2 mb-2">
+                                <X className="h-5 w-5 text-muted-foreground" />
+                                <span className="font-medium text-foreground">سبب الإلغاء من المؤسسة:</span>
                               </div>
-                              <p className="text-gray-800 text-sm">{request.cancellationReason}</p>
+                              <p className="text-foreground text-sm">{request.cancellationReason}</p>
                               {request.cancellationDate && (
-                                <p className="text-gray-600 text-xs mt-1">
+                                <p className="text-muted-foreground text-xs mt-1">
                                   تاريخ الإلغاء: {new Date(request.cancellationDate).toLocaleString('ar-EG')}
                                 </p>
                               )}
@@ -841,26 +744,26 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                           {/* تفاصيل العناصر المطلوبة */}
                           {request.requestedItems && request.requestedItems.length > 0 && (
                             <div className="mb-4">
-                              <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                                <List className="h-5 w-5 text-blue-600" />
-                                <span className="font-medium text-gray-700">العناصر المطلوبة بالتفصيل:</span>
+                              <div className="flex items-center gap-2 mb-2">
+                                <List className="h-5 w-5 text-info" />
+                                <span className="font-medium text-foreground">العناصر المطلوبة بالتفصيل:</span>
                               </div>
-                              <div className="bg-[hsl(142,30%,96%)] p-3 rounded-lg border border-[hsl(142,30%,85%)]">
+                              <div className="bg-muted/50 p-3 rounded-lg border border-border">
                                 <div className="grid gap-2">
                                   {request.requestedItems.map((item, index) => (
-                                    <div key={index} className="flex items-center justify-between bg-white p-2 rounded border border-[hsl(142,30%,85%)]">
-                                      <div className="flex items-center space-x-2 space-x-reverse">
-                                        <Package className="h-4 w-4 text-[hsl(142,60%,25%)]" />
+                                    <div key={index} className="flex items-center justify-between bg-card p-2 rounded border border-border">
+                                      <div className="flex items-center gap-2">
+                                        <Package className="h-4 w-4 text-primary" />
                                         <span className="font-medium">{item.itemName}</span>
                                       </div>
-                                      <Badge variant="outline" className="bg-[hsl(142,30%,96%)] text-[hsl(142,60%,25%)] border-[hsl(142,50%,30%)]">
+                                      <Badge variant="outline" className="bg-muted/50 text-primary border-primary/30">
                                         {item.quantity} {item.unitType}
                                       </Badge>
                                     </div>
                                   ))}
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-[hsl(142,30%,85%)]">
-                                  <span className="text-sm text-[hsl(142,60%,25%)] font-medium">
+                                <div className="mt-2 pt-2 border-t border-border">
+                                  <span className="text-sm text-primary font-medium">
                                     إجمالي العناصر: {request.requestedItems.reduce((sum, item) => sum + item.quantity, 0)} عنصر
                                   </span>
                                 </div>
@@ -868,37 +771,37 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                             </div>
                           )}
                           
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{request.description}</p>
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{request.description}</p>
                           
                           {/* Request Details */}
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4 text-sm">
                             {request.quantity > 0 && (
-                              <div className="flex items-center space-x-2 space-x-reverse bg-[hsl(142,30%,96%)] p-2 rounded">
-                                <Package className="h-4 w-4 text-[hsl(142,60%,25%)]" />
+                              <div className="flex items-center gap-2 bg-muted/50 p-2 rounded">
+                                <Package className="h-4 w-4 text-primary" />
                                 <span className="font-medium">{request.quantity} {request.unitType}</span>
                               </div>
                             )}
-                            <div className="flex items-center space-x-2 space-x-reverse bg-gray-50 p-2 rounded">
-                              <Calendar className="h-4 w-4 text-gray-600" />
+                            <div className="flex items-center gap-2 bg-muted/30 p-2 rounded">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
                               <span>{new Date(request.dateSubmitted).toLocaleDateString('ar-EG')}</span>
                             </div>
                             {request.schoolLocation && (
-                              <div className="flex items-center space-x-2 space-x-reverse bg-[hsl(38,30%,96%)] p-2 rounded">
-                                <MapPin className="h-4 w-4 text-[hsl(38,85%,60%)]" />
+                              <div className="flex items-center gap-2 bg-warning/10 p-2 rounded">
+                                <MapPin className="h-4 w-4 text-foreground" />
                                 <span>{request.schoolLocation}</span>
                               </div>
                             )}
                           </div>
                         </div>
                         
-                        <div className="flex space-x-2 space-x-reverse">
+                        <div className="flex gap-2">
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => handleViewDetails(request)}
-                            className="hover:bg-[hsl(142,30%,96%)] hover:border-[hsl(142,50%,30%)] hover:text-[hsl(142,60%,25%)] transition-all duration-200"
+                            className="hover:bg-primary/10 hover:border-primary hover:text-primary transition-colors"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="h-4 w-4 ms-1" />
                             عرض التفاصيل
                           </Button>
                           
@@ -907,18 +810,18 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                               <Button 
                                 size="sm" 
                                 onClick={() => handleStartProgress(request.id, request.title)}
-                                className="bg-gradient-to-r from-[hsl(142,60%,25%)] to-[hsl(142,50%,20%)] hover:from-[hsl(142,60%,30%)] hover:to-[hsl(142,50%,25%)] text-white transition-all duration-200"
+                                className="bg-primary text-primary-foreground hover:bg-primary-700 transition-colors"
                               >
-                                <Play className="h-4 w-4 mr-1" />
+                                <Play className="h-4 w-4 ms-1" />
                                 بدء التنفيذ
                               </Button>
                               <Button 
                                 size="sm" 
                                 variant="destructive"
                                 onClick={() => handleRejectRequest(request)}
-                                className="hover:bg-red-700 transition-all duration-200"
+                                className="hover:bg-danger transition-colors"
                               >
-                                <X className="h-4 w-4 mr-1" />
+                                <X className="h-4 w-4 ms-1" />
                                 رفض الطلب
                               </Button>
                             </>
@@ -928,27 +831,27 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                             <Button 
                               size="sm"
                               onClick={() => handleReadyForPickup(request.id, request.title)}
-                              className="bg-orange-600 hover:bg-orange-700 transition-all duration-200"
+                              className="bg-warning hover:bg-warning/80 text-warning-foreground transition-colors"
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <CheckCircle className="h-4 w-4 ms-1" />
                               جاهز للاستلام
                             </Button>
                           )}
 
                           {request.status === 'ready-for-pickup' && (
-                            <div className="flex space-x-2 space-x-reverse">
+                            <div className="flex gap-2">
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button 
                                     size="sm"
                                     variant="outline"
-                                    className="bg-red-50 hover:bg-red-100 text-red-600 border-red-300 hover:border-red-400"
+                                    className="bg-danger/10 hover:bg-danger/15 text-danger border-danger/40 hover:border-red-400"
                                   >
-                                    <Undo2 className="h-4 w-4 mr-1" />
+                                    <Undo2 className="h-4 w-4 ms-1" />
                                     إرجاع للمخزون
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-white">
+                                <AlertDialogContent className="bg-card">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>تأكيد إرجاع العناصر للمخزون</AlertDialogTitle>
                                     <AlertDialogDescription>
@@ -959,7 +862,7 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                                     <AlertDialogCancel>إلغاء</AlertDialogCancel>
                                     <AlertDialogAction 
                                       onClick={() => handleReturnToInventory(request.id, request.title)}
-                                      className="bg-red-600 hover:bg-red-700"
+                                      className="bg-danger hover:bg-danger"
                                     >
                                       إرجاع للمخزون
                                     </AlertDialogAction>
@@ -973,9 +876,9 @@ const WarehouseDashboard = ({ requests, onUpdateStatus, onUpdateRequest, user }:
                             <Button 
                               size="sm"
                               onClick={() => handleRetryUndelivered(request.id, request.title)}
-                              className="bg-orange-600 hover:bg-orange-700 transition-all duration-200"
+                              className="bg-warning hover:bg-warning/80 text-warning-foreground transition-colors"
                             >
-                              <RefreshCw className="h-4 w-4 mr-1" />
+                              <RefreshCw className="h-4 w-4 ms-1" />
                               إعادة التنفيذ
                             </Button>
                           )}

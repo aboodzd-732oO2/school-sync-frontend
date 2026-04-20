@@ -53,10 +53,10 @@ const RejectRequestDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent className="sm:max-w-md bg-card">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 space-x-reverse">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-danger" />
             <span>{title}</span>
           </DialogTitle>
           <DialogDescription>
@@ -65,9 +65,9 @@ const RejectRequestDialog = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <Label className="text-sm font-medium text-blue-700">الطلب:</Label>
-            <p className="text-blue-900 font-medium">{requestTitle}</p>
+          <div className="p-3 bg-info/10 rounded-lg border border-info/30">
+            <Label className="text-sm font-medium text-info">الطلب:</Label>
+            <p className="text-info font-medium">{requestTitle}</p>
           </div>
 
           <div className="space-y-2">
@@ -80,7 +80,7 @@ const RejectRequestDialog = ({
               rows={4}
               className="resize-none"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               يجب كتابة سبب واضح ومفصل
             </p>
           </div>

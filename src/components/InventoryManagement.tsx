@@ -31,10 +31,10 @@ const InventoryManagement = ({ warehouseName, department }: InventoryManagementP
   const [searchTerm, setSearchTerm] = useState("");
 
   const loadInventory = useCallback(async () => {
-    const allItems = await InventoryService.getWarehouseInventory(warehouseName);
+    const allItems = await InventoryService.getWarehouseInventory();
     const departmentItems = allItems.filter(item => item.department === department);
     setInventory(departmentItems);
-  }, [warehouseName, department]);
+  }, [department]);
 
   useEffect(() => {
     loadInventory();
@@ -43,9 +43,8 @@ const InventoryManagement = ({ warehouseName, department }: InventoryManagementP
   const handleAddItem = async (newItem: Omit<InventoryItem, 'id' | 'warehouseName' | 'department'>) => {
     const existingItem = inventory.find(item => item.name === newItem.name);
     try {
-      const addedItem = await InventoryService.addInventoryItem(warehouseName, {
+      const addedItem = await InventoryService.addInventoryItem({
         ...newItem,
-        warehouseName,
         department
       });
       await loadInventory();
@@ -61,7 +60,7 @@ const InventoryManagement = ({ warehouseName, department }: InventoryManagementP
   };
 
   const handleSaveThreshold = async (itemId: string, threshold: number) => {
-    await InventoryService.updateInventoryItem(warehouseName, itemId, { minThreshold: threshold });
+    await InventoryService.updateInventoryItem(itemId, { minThreshold: threshold });
     setInventory(prev => prev.map(item =>
       item.id === itemId ? { ...item, minThreshold: threshold } : item
     ));
@@ -75,7 +74,7 @@ const InventoryManagement = ({ warehouseName, department }: InventoryManagementP
     }
     const item = inventory.find(i => i.id === itemId);
     if (!item) return;
-    await InventoryService.updateInventoryItem(warehouseName, itemId, { quantity: item.quantity + quantity });
+    await InventoryService.updateInventoryItem(itemId, { quantity: item.quantity + quantity });
     setInventory(prev => prev.map(i =>
       i.id === itemId ? { ...i, quantity: i.quantity + quantity } : i
     ));
@@ -83,7 +82,7 @@ const InventoryManagement = ({ warehouseName, department }: InventoryManagementP
   };
 
   const handleUpdateItem = async (itemId: string, quantity: number, threshold: number) => {
-    await InventoryService.updateInventoryItem(warehouseName, itemId, { quantity, minThreshold: threshold });
+    await InventoryService.updateInventoryItem(itemId, { quantity, minThreshold: threshold });
     const itemName = inventory.find(item => item.id === itemId)?.name;
     setInventory(prev => prev.map(item =>
       item.id === itemId ? { ...item, quantity, minThreshold: threshold } : item
@@ -92,7 +91,7 @@ const InventoryManagement = ({ warehouseName, department }: InventoryManagementP
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    const success = await InventoryService.deleteInventoryItem(warehouseName, itemId);
+    const success = await InventoryService.deleteInventoryItem(itemId);
     if (success) {
       setInventory(prev => prev.filter(item => item.id !== itemId));
       toast({ title: "تم حذف العنصر", description: "تم حذف العنصر من المخزون بنجاح" });

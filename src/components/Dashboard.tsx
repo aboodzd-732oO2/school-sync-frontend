@@ -51,12 +51,11 @@ const Dashboard = ({ requests, onUpdateStatus, onDeleteRequest, onUpdateRequest,
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Institution Welcome Header */}
-      <div className="text-center mb-8 p-6 bg-gradient-to-r from-[hsl(142,60%,25%)] via-[hsl(142,50%,20%)] to-[hsl(142,60%,25%)] rounded-2xl shadow-lg border border-[hsl(142,50%,15%)]">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          📊 لوحة التحكم الرئيسية
-        </h1>
-        <p className="text-white/90 font-medium">نظرة شاملة على جميع طلبات {user?.institutionName}</p>
+      <div className="mb-2">
+        <h1 className="text-xl font-bold text-foreground">لوحة التحكم</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          نظرة شاملة على طلبات {user?.institutionName}
+        </p>
       </div>
 
       {/* Main Stats */}

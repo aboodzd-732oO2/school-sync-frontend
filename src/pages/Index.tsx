@@ -1,10 +1,29 @@
 import { useState, useEffect, useCallback } from "react";
-import Navigation from "@/components/Navigation";
+import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import Dashboard from "@/components/Dashboard";
 import RequestForm from "@/components/RequestForm";
 import Reports from "@/components/Reports";
 import LoginForm from "@/components/LoginForm";
+import InventoryManagement from "@/components/InventoryManagement";
+import { AppShell } from "@/components/layout/AppShell";
 import { auth, requests as requestsApi, warehouse as warehouseApi, removeToken } from "@/services/api";
+import { connectSocket, disconnectSocket } from "@/services/socket";
+import { useRequestsRealtime } from "@/hooks/useRequestsRealtime";
+
+// Admin pages
+import AdminStatsPage from "./admin/Stats";
+import AdminUsersPage from "./admin/Users";
+import AdminInstitutionsPage from "./admin/Institutions";
+import AdminWarehousesPage from "./admin/Warehouses";
+import AdminDepartmentsPage from "./admin/Departments";
+import AdminDeptItemsPage from "./admin/DeptItems";
+import AdminGovernoratesPage from "./admin/Governorates";
+import AdminInstTypesPage from "./admin/InstTypes";
+import AdminUnitsPage from "./admin/Units";
+import AdminPrioritiesPage from "./admin/Priorities";
+import AdminRoutingPage from "./admin/Routing";
+import AdminPasswordResetsPage from "./admin/PasswordResets";
+import AdminAuditPage from "./admin/Audit";
 
 interface Request {
   id: string;
@@ -30,12 +49,6 @@ interface Request {
     unitType: string;
     displayText: string;
   }>;
-  itemsBreakdown?: Array<{
-    name: string;
-    key: string;
-    quantity: number;
-    unit: string;
-  }>;
   rejectionReason?: string;
   rejectionDate?: string;
   cancellationReason?: string;
@@ -48,6 +61,11 @@ type UserData = {
   loginTime: string;
   governorate?: string;
 } & ({
+  userType: 'admin';
+  institutionType?: never;
+  institutionName?: never;
+  warehouseName?: never;
+} | {
   userType: 'institution';
   institutionType: string;
   institutionName: string;
@@ -60,28 +78,24 @@ type UserData = {
 });
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<Request[]>([]);
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // تحميل الطلبات من API
   const loadRequests = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.userType === 'admin') return;
     try {
-      let data;
-      if (user.userType === 'institution') {
-        data = await requestsApi.list();
-      } else {
-        data = await warehouseApi.listRequests();
-      }
+      const data = user.userType === 'institution'
+        ? await requestsApi.list()
+        : await warehouseApi.listRequests();
       setRequests(data);
     } catch (err) {
       console.error('Error loading requests:', err);
     }
   }, [user]);
 
-  // تحقق من تسجيل الدخول عبر JWT
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
@@ -89,6 +103,7 @@ const Index = () => {
         try {
           const profile = await auth.me();
           setUser({ ...profile, loginTime: new Date().toISOString() });
+          connectSocket(token);
         } catch {
           removeToken();
         }
@@ -98,23 +113,31 @@ const Index = () => {
     checkAuth();
   }, []);
 
-  // تحميل الطلبات عند تسجيل الدخول
-  useEffect(() => {
-    if (user) {
-      loadRequests();
-    }
-  }, [user, loadRequests]);
+  useEffect(() => { if (user) loadRequests(); }, [user, loadRequests]);
 
   const handleLogin = (userData: UserData) => {
     setUser(userData);
+    // توجيه افتراضي حسب الدور
+    if (userData.userType === 'admin') navigate('/admin/stats');
+    else navigate('/dashboard');
   };
 
   const handleLogout = () => {
+    disconnectSocket();
     removeToken();
     setUser(null);
     setRequests([]);
-    setActiveTab('dashboard');
+    navigate('/');
   };
+
+  useRequestsRealtime({
+    onNew: useCallback((r: Request) => {
+      setRequests(prev => prev.some(p => p.id === r.id) ? prev : [r, ...prev]);
+    }, []),
+    onStatusChanged: useCallback((r: Request) => {
+      setRequests(prev => prev.map(p => p.id === r.id ? r : p));
+    }, []),
+  });
 
   const handleSubmitRequest = async (newRequest: Request) => {
     try {
@@ -132,7 +155,7 @@ const Index = () => {
         requestedItems: newRequest.requestedItems || [],
       });
       setRequests(prev => [created, ...prev]);
-      setActiveTab('dashboard');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Error creating request:', err);
     }
@@ -140,49 +163,37 @@ const Index = () => {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      let updated;
-      if (user?.userType === 'warehouse') {
-        updated = await warehouseApi.updateRequestStatus(id, { status });
-      } else {
-        updated = await requestsApi.updateStatus(id, { status });
-      }
+      const updated = user?.userType === 'warehouse'
+        ? await warehouseApi.updateRequestStatus(id, { status })
+        : await requestsApi.updateStatus(id, { status });
       setRequests(prev => prev.map(r => r.id === id ? updated : r));
-    } catch (err) {
-      console.error('Error updating status:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleDeleteRequest = async (id: string) => {
     try {
       await requestsApi.remove(id);
       setRequests(prev => prev.filter(r => r.id !== id));
-    } catch (err) {
-      console.error('Error deleting request:', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleUpdateRequest = async (updatedRequest: Request) => {
     try {
-      // إذا تغيرت الحالة (إلغاء أو رفض)
       if (updatedRequest.status === 'cancelled' || updatedRequest.status === 'rejected') {
-        let updated;
-        if (user?.userType === 'warehouse') {
-          updated = await warehouseApi.updateRequestStatus(updatedRequest.id, {
-            status: updatedRequest.status,
-            rejectionReason: updatedRequest.rejectionReason,
-            cancellationReason: updatedRequest.cancellationReason,
-            cancellationType: updatedRequest.cancellationType,
-          });
-        } else {
-          updated = await requestsApi.updateStatus(updatedRequest.id, {
-            status: updatedRequest.status,
-            cancellationReason: updatedRequest.cancellationReason,
-            cancellationType: updatedRequest.cancellationType,
-          });
-        }
+        const updated = user?.userType === 'warehouse'
+          ? await warehouseApi.updateRequestStatus(updatedRequest.id, {
+              status: updatedRequest.status,
+              rejectionReason: updatedRequest.rejectionReason,
+              cancellationReason: updatedRequest.cancellationReason,
+              cancellationType: updatedRequest.cancellationType,
+            })
+          : await requestsApi.updateStatus(updatedRequest.id, {
+              status: updatedRequest.status,
+              cancellationReason: updatedRequest.cancellationReason,
+              cancellationType: updatedRequest.cancellationType,
+            });
         setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updated : r));
       } else {
-        // تعديل عادي على الطلب
         const updated = await requestsApi.update(updatedRequest.id, {
           title: updatedRequest.title,
           description: updatedRequest.description,
@@ -196,74 +207,78 @@ const Index = () => {
         });
         setRequests(prev => prev.map(r => r.id === updatedRequest.id ? updated : r));
       }
-    } catch (err) {
-      console.error('Error updating request:', err);
-    }
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard
-          requests={requests}
-          onUpdateStatus={handleUpdateStatus}
-          onDeleteRequest={handleDeleteRequest}
-          onUpdateRequest={handleUpdateRequest}
-          user={user}
-        />;
-      case 'submit':
-        return user?.userType === 'institution' ? (
-          <RequestForm onSubmit={handleSubmitRequest} userData={user} />
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-600">هذا القسم متاح للمؤسسات التعليمية فقط</p>
-          </div>
-        );
-      case 'reports':
-        return <Reports requests={requests} />;
-      default:
-        return <Dashboard
-          requests={requests}
-          onUpdateStatus={handleUpdateStatus}
-          onDeleteRequest={handleDeleteRequest}
-          onUpdateRequest={handleUpdateRequest}
-          user={user}
-        />;
-    }
+    } catch (err) { console.error(err); }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(142,60%,25%)] via-[hsl(142,50%,20%)] to-[hsl(142,60%,25%)] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-24 w-24 border-4 border-white/20 border-t-white mx-auto"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-16 w-16 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white text-2xl">📚</span>
-              </div>
-            </div>
-          </div>
-          <p className="mt-6 text-lg font-semibold text-white">جاري التحميل...</p>
-          <p className="mt-2 text-sm text-white/80">يرجى الانتظار</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto" />
+          <p className="mt-4 text-sm text-muted-foreground">جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return <LoginForm onLogin={handleLogin} />;
+  if (!user) return <LoginForm onLogin={handleLogin} />;
+
+  // Admin routing
+  if (user.userType === 'admin') {
+    const path = location.pathname;
+    let content: React.ReactNode;
+    if (path === '/' || path === '/admin' || path === '/admin/stats') content = <AdminStatsPage />;
+    else if (path === '/admin/users') content = <AdminUsersPage />;
+    else if (path === '/admin/institutions') content = <AdminInstitutionsPage />;
+    else if (path === '/admin/warehouses') content = <AdminWarehousesPage />;
+    else if (path === '/admin/departments') content = <AdminDepartmentsPage />;
+    else if (path === '/admin/dept-items') content = <AdminDeptItemsPage />;
+    else if (path === '/admin/governorates') content = <AdminGovernoratesPage />;
+    else if (path === '/admin/inst-types') content = <AdminInstTypesPage />;
+    else if (path === '/admin/units') content = <AdminUnitsPage />;
+    else if (path === '/admin/priorities') content = <AdminPrioritiesPage />;
+    else if (path === '/admin/routing') content = <AdminRoutingPage />;
+    else if (path === '/admin/password-resets') content = <AdminPasswordResetsPage />;
+    else if (path === '/admin/audit') content = <AdminAuditPage />;
+    else return <Navigate to="/admin/stats" replace />;
+
+    return (
+      <AppShell user={user} onLogout={handleLogout}>
+        {content}
+      </AppShell>
+    );
+  }
+
+  // Institution + Warehouse routing
+  const path = location.pathname;
+  let content: React.ReactNode;
+
+  if (path === '/submit') {
+    if (user.userType !== 'institution') return <Navigate to="/dashboard" replace />;
+    content = <RequestForm onSubmit={handleSubmitRequest} userData={user} />;
+  } else if (path === '/reports') {
+    content = <Reports requests={requests} />;
+  } else if (path === '/inventory') {
+    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
+    content = <InventoryManagement warehouseName={user.warehouseName} department="" />;
+  } else if (path === '/dashboard' || path === '/') {
+    content = (
+      <Dashboard
+        requests={requests}
+        onUpdateStatus={handleUpdateStatus}
+        onDeleteRequest={handleDeleteRequest}
+        onUpdateRequest={handleUpdateRequest}
+        user={user}
+      />
+    );
+  } else {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(142,30%,96%)] via-[hsl(142,40%,94%)] to-[hsl(142,30%,96%)] w-full" dir="rtl">
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} user={user} onLogout={handleLogout} />
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="w-full overflow-hidden">
-          {renderContent()}
-        </div>
-      </main>
-    </div>
+    <AppShell user={user} onLogout={handleLogout}>
+      {content}
+    </AppShell>
   );
 };
 

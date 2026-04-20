@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
+import { X, Edit, Circle, Save } from "lucide-react";
+import { useDepartmentItems } from "@/hooks/useLookups";
 
 interface Request {
   id: string;
@@ -72,52 +73,12 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
     subcategory: [] as SubcategoryWithCustom[]
   });
 
-  const subcategoryLabels: { [key: string]: string } = {
-    'chairs': '🪑 كراسي',
-    'pens': '✏️ أقلام',
-    'boards': '📋 ألواح',
-    'fans': '🌀 مراوح',
-    'blinds': '🪟 ستائر',
-    'air-conditioners': '❄️ مكيفات',
-    'heaters': '🔥 مدافئ',
-    'chalk': '✍️ طباشير',
-    'computers': '💻 حاسوب',
-    'projectors': '📽️ بروجكتر',
-    'electrical-issues': '⚡ مشاكل كهربائية',
-    'water-issues': '💧 مشاكل مياه',
-    'connections': '🔌 توصيلات',
-    'building-repairs': '🏗️ إصلاحات المبنى',
-    'cleaning': '🧹 تنظيف',
-    'textbooks': '📚 كتب مدرسية',
-    'papers': '📄 أوراق',
-    'notebooks': '📓 دفاتر',
-    'stationery': '📝 قرطاسية',
-    'software': '💾 برمجيات',
-    'network': '🌐 شبكة',
-    'audio-visual': '🎵 سمعي بصري',
-    'fire-safety': '🔥 السلامة من الحريق',
-    'security': '🔒 أمن',
-    'emergency-equipment': '🚨 معدات الطوارئ',
-    'other': '📝 أخرى'
-  };
+  // العناصر تُجلب ديناميكياً حسب قسم الطلب
+  const { items: deptItemsData } = useDepartmentItems(formData.department);
 
-  const departmentOptions = {
-    'materials': {
-      subcategories: ['chairs', 'pens', 'boards', 'fans', 'blinds', 'air-conditioners', 'heaters', 'chalk', 'computers', 'projectors', 'other']
-    },
-    'maintenance': {
-      subcategories: ['electrical-issues', 'water-issues', 'connections', 'building-repairs', 'cleaning', 'other']
-    },
-    'academic-materials': {
-      subcategories: ['textbooks', 'papers', 'notebooks', 'stationery', 'other']
-    },
-    'technology': {
-      subcategories: ['computers', 'software', 'network', 'audio-visual', 'other']
-    },
-    'safety': {
-      subcategories: ['fire-safety', 'security', 'emergency-equipment', 'other']
-    }
-  };
+  const subcategoryLabels: { [key: string]: string } = {};
+  deptItemsData.forEach(i => { subcategoryLabels[i.key] = i.labelAr; });
+  subcategoryLabels['other'] = 'أخرى';
 
   // Parse existing subcategories from different possible formats
   const parseSubcategories = (request: Request): SubcategoryWithCustom[] => {
@@ -174,7 +135,6 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
   // Update form data when request changes or modal opens
   useEffect(() => {
     if (request && isOpen) {
-      console.log('Setting form data for request:', request);
       const parsedSubcategories = parseSubcategories(request);
       
       setFormData({
@@ -192,9 +152,8 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('Submitting form with data:', formData);
-    
+
+
     if (!formData.title || !formData.description || !formData.priority) {
       toast({
         title: "معلومات مفقودة",
@@ -271,13 +230,12 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
       unitType: formData.subcategory.length > 1 ? 'متنوع' : (formData.subcategory[0]?.key === 'other' ? 'عنصر' : getUnitType(formData.subcategory[0]?.key))
     };
 
-    console.log('Updated request:', updatedRequest);
-    
+
     onUpdate(updatedRequest);
     onClose();
     
     toast({
-      title: "تم تحديث الطلب ✅",
+      title: "تم تحديث الطلب",
       description: "تم حفظ التعديلات بنجاح.",
     });
   };
@@ -355,24 +313,24 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
     onClose();
   };
 
-  const availableSubcategories = departmentOptions[request.department as keyof typeof departmentOptions]?.subcategories || [];
+  const availableSubcategories = [...deptItemsData.map(i => i.key), 'other'];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2 space-x-reverse">
-            <span>✏️</span>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="size-5 text-primary" />
             <span>تعديل الطلب</span>
           </DialogTitle>
           <DialogDescription>
             تعديل تفاصيل الطلب رقم #{request.id}
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">📝 عنوان الطلب *</Label>
+            <Label htmlFor="title">عنوان الطلب *</Label>
             <Input
               id="title"
               value={formData.title}
@@ -383,8 +341,8 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
 
           {/* Multiple Subcategory Selection with Quantities */}
           <div className="space-y-2">
-            <Label className="text-base font-semibold">🔍 التفصيل المحدد والكميات (يمكن اختيار أكثر من عنصر)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg">
+            <Label className="text-base font-semibold">التفصيل المحدد والكميات (يمكن اختيار أكثر من عنصر)</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4 bg-muted/30 rounded-lg">
               {availableSubcategories.map((sub) => (
                 <div key={sub} className="space-y-2">
                   <div className="flex items-center space-x-2 space-x-reverse">
@@ -400,7 +358,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
                   
                   {/* Quantity input for selected items */}
                   {formData.subcategory.some(item => item.key === sub) && (
-                    <div className="mr-6 space-y-2">
+                    <div className="ms-6 space-y-2">
                       <div className="flex items-center space-x-2 space-x-reverse">
                         <Label className="text-xs">الكمية:</Label>
                         <Input
@@ -410,7 +368,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
                           onChange={(e) => handleQuantityChange(sub, parseInt(e.target.value) || 1)}
                           className="w-20 h-8 text-sm"
                         />
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {getUnitType(sub)}
                         </span>
                       </div>
@@ -432,10 +390,10 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
             
             {/* Selected subcategories display */}
             {formData.subcategory.length > 0 && (
-              <div className="flex flex-wrap gap-2 p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium text-blue-800">المحدد:</span>
+              <div className="flex flex-wrap gap-2 p-3 bg-info/10 rounded-lg">
+                <span className="text-sm font-medium text-info">المحدد:</span>
                 {formData.subcategory.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-1 space-x-reverse bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                  <div key={index} className="flex items-center space-x-1 space-x-reverse bg-info/15 text-info px-2 py-1 rounded-full text-xs">
                     <span>
                       {item.key === 'other' && item.customDetails 
                         ? `${item.customDetails} (${item.quantity} عنصر)`
@@ -445,7 +403,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
                     <button
                       type="button"
                       onClick={() => removeSubcategory(index)}
-                      className="hover:bg-blue-200 rounded-full p-0.5"
+                      className="hover:bg-info/20 rounded-full p-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -456,7 +414,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="studentsAffected">👥 الطلاب المتأثرين (اختياري)</Label>
+            <Label htmlFor="studentsAffected">الطلاب المتأثرين (اختياري)</Label>
             <Input
               id="studentsAffected"
               type="number"
@@ -468,7 +426,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">📄 الوصف التفصيلي *</Label>
+            <Label htmlFor="description">الوصف التفصيلي *</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -479,23 +437,29 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="priority">⚡ مستوى الأولوية *</Label>
-            <Select value={formData.priority} onValueChange={(value) => 
+            <Label htmlFor="priority">مستوى الأولوية *</Label>
+            <Select value={formData.priority} onValueChange={(value) =>
               setFormData(prev => ({ ...prev, priority: value }))
             }>
               <SelectTrigger>
                 <SelectValue placeholder="اختر الأولوية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="high" className="text-red-600">🔴 عالية</SelectItem>
-                <SelectItem value="medium" className="text-yellow-600">🟡 متوسطة</SelectItem>
-                <SelectItem value="low" className="text-green-600">🟢 منخفضة</SelectItem>
+                <SelectItem value="high" className="text-danger">
+                  <span className="flex items-center gap-2"><Circle className="size-3 fill-danger text-danger" />عالية</span>
+                </SelectItem>
+                <SelectItem value="medium" className="text-warning-foreground">
+                  <span className="flex items-center gap-2"><Circle className="size-3 fill-warning text-warning" />متوسطة</span>
+                </SelectItem>
+                <SelectItem value="low" className="text-success">
+                  <span className="flex items-center gap-2"><Circle className="size-3 fill-success text-success" />منخفضة</span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="impact">📊 التأثير على العملية التعليمية</Label>
+            <Label htmlFor="impact">التأثير على العملية التعليمية</Label>
             <Textarea
               id="impact"
               value={formData.impact}
@@ -505,12 +469,14 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
             />
           </div>
 
-          <div className="flex justify-end space-x-2 space-x-reverse pt-4">
+          <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={handleClose}>
-              ❌ إلغاء
+              <X className="size-4 me-1" />
+              إلغاء
             </Button>
             <Button type="submit">
-              💾 حفظ التعديلات
+              <Save className="size-4 me-1" />
+              حفظ التعديلات
             </Button>
           </div>
         </form>

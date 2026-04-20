@@ -18,15 +18,15 @@ const FormActions = ({ itemsCount, onAddItem, onSubmit, onCancel }: FormActionsP
           type="button"
           variant="outline"
           onClick={onAddItem}
-          className="border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400"
+          className="border-success/40 bg-success/10 text-success hover:bg-success/15 hover:border-green-400"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 ms-2" />
           إضافة عنصر آخر
         </Button>
       </div>
 
-      <div className="flex space-x-2 space-x-reverse pt-4 border-t">
-        <Button type="submit" className="bg-green-600 hover:bg-green-700" onClick={onSubmit}>
+      <div className="flex gap-2 pt-4 border-t">
+        <Button type="submit" className="bg-success hover:bg-success" onClick={onSubmit}>
           إضافة جميع العناصر ({itemsCount})
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>

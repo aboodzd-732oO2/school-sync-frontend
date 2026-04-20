@@ -1,5 +1,4 @@
 import { inventory as inventoryApi } from './api';
-import { ItemMatchingService } from './inventory/ItemMatchingService';
 
 interface InventoryItem {
   id: string;
@@ -22,8 +21,7 @@ interface StockCheckResult {
 }
 
 export class InventoryService {
-  // جلب المخزون من API
-  static async getWarehouseInventory(_warehouseName?: string): Promise<InventoryItem[]> {
+  static async getWarehouseInventory(): Promise<InventoryItem[]> {
     try {
       const items = await inventoryApi.list();
       return items.map((item: any) => ({
@@ -34,26 +32,14 @@ export class InventoryService {
         unitType: item.unitType,
         minThreshold: item.minThreshold,
         department: item.department,
-        warehouseName: _warehouseName || '',
+        warehouseName: '',
       }));
     } catch {
       return [];
     }
   }
 
-  // حفظ المخزون — لم يعد مطلوباً (API يتولى)
-  static saveWarehouseInventory(_warehouseName: string, _inventory: InventoryItem[]): void {
-    // No-op: handled by API
-  }
-
-  static cleanupDuplicates(_warehouseName: string): void {
-    // No-op: handled by API
-  }
-
-  // فحص المخزون
   static async checkStockAvailability(
-    _warehouseName: string,
-    _department: string,
     requestedItem: string,
     requestedQuantity: number
   ): Promise<StockCheckResult> {
@@ -78,17 +64,7 @@ export class InventoryService {
     }
   }
 
-  static async consumeStock(
-    _warehouseName: string,
-    _department: string,
-    _requestedItem: string,
-    _requestedQuantity: number
-  ): Promise<boolean> {
-    // يتم من خلال الباك اند تلقائياً عند إكمال الطلب
-    return true;
-  }
-
-  static async getLowStockItems(_warehouseName?: string, _department?: string): Promise<InventoryItem[]> {
+  static async getLowStockItems(): Promise<InventoryItem[]> {
     try {
       const items = await inventoryApi.lowStock();
       return items.map((item: any) => ({
@@ -99,18 +75,14 @@ export class InventoryService {
         unitType: item.unitType,
         minThreshold: item.minThreshold,
         department: item.department,
-        warehouseName: _warehouseName || '',
+        warehouseName: '',
       }));
     } catch {
       return [];
     }
   }
 
-  static getInstitutionalItemTypes(department: string): string[] {
-    return ItemMatchingService.getInstitutionalItemTypes(department);
-  }
-
-  static async addInventoryItem(_warehouseName: string, item: Omit<InventoryItem, 'id'>): Promise<InventoryItem> {
+  static async addInventoryItem(item: Omit<InventoryItem, 'id' | 'warehouseName'>): Promise<InventoryItem> {
     const created = await inventoryApi.create({
       name: item.name,
       category: item.category,
@@ -127,11 +99,11 @@ export class InventoryService {
       unitType: created.unitType,
       minThreshold: created.minThreshold,
       department: created.department,
-      warehouseName: _warehouseName,
+      warehouseName: '',
     };
   }
 
-  static async updateInventoryItem(_warehouseName: string, itemId: string, updates: Partial<InventoryItem>): Promise<boolean> {
+  static async updateInventoryItem(itemId: string, updates: Partial<InventoryItem>): Promise<boolean> {
     try {
       await inventoryApi.update(parseInt(itemId), updates);
       return true;
@@ -140,7 +112,7 @@ export class InventoryService {
     }
   }
 
-  static async deleteInventoryItem(_warehouseName: string, itemId: string): Promise<boolean> {
+  static async deleteInventoryItem(itemId: string): Promise<boolean> {
     try {
       await inventoryApi.remove(parseInt(itemId));
       return true;

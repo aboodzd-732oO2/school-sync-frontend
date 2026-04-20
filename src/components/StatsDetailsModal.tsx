@@ -81,7 +81,7 @@ const StatsDetailsModal = ({ isOpen, onClose, title, data, type, requests }: Sta
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="h-[75vh] pr-4">
+        <ScrollArea className="h-[75vh] ps-4">
           {renderContent()}
         </ScrollArea>
       </DialogContent>

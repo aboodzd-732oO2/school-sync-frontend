@@ -1,7 +1,8 @@
 
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ItemMatchingService } from "@/services/inventory/ItemMatchingService";
+import { AlertTriangle } from "lucide-react";
+import { useDepartmentItems } from "@/hooks/useLookups";
 import ItemFormCard from "./inventory/ItemFormCard";
 import FormActions from "./inventory/FormActions";
 import { validateInventoryForm } from "./inventory/FormValidation";
@@ -57,8 +58,7 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
   };
 
   const updateItem = (itemId: string, field: keyof ItemToAdd, value: string | number) => {
-    console.log('Updating item:', itemId, field, value);
-    setItemsToAdd(prevItems => 
+    setItemsToAdd(prevItems =>
       prevItems.map(item => 
         item.id === itemId ? { ...item, [field]: value } : item
       )
@@ -134,9 +134,9 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
     onClose();
   };
 
-  // استخدام العناصر المحددة مع إضافة خيار "أخرى"
-  const availableItems = [...ItemMatchingService.getInstitutionalItemTypes(department), 'أخرى'];
-  console.log('Available items:', availableItems);
+  // العناصر من API حسب القسم
+  const { items: deptItems } = useDepartmentItems(department);
+  const availableItems = [...deptItems.map(i => i.labelAr), 'أخرى'];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -151,8 +151,9 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* رسالة تحذير عند وجود تكرار */}
           {errors['duplicate'] && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-red-800 text-sm font-medium">❌ {errors['duplicate']}</p>
+            <div className="bg-danger/10 border border-danger/30 rounded-md p-3 flex items-start gap-2">
+              <AlertTriangle className="size-5 text-danger shrink-0 mt-0.5" />
+              <p className="text-danger text-sm font-medium">{errors['duplicate']}</p>
             </div>
           )}
 

@@ -11,14 +11,14 @@ const DetailedItemsView = ({ data }: DetailedItemsViewProps) => {
   if (!data || !Array.isArray(data)) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-600">لا توجد بيانات للعرض</p>
+        <p className="text-muted-foreground">لا توجد بيانات للعرض</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600 mb-4">
+      <div className="text-sm text-muted-foreground mb-4">
         إجمالي أنواع العناصر: {data.length} نوع
       </div>
       
@@ -31,11 +31,11 @@ const DetailedItemsView = ({ data }: DetailedItemsViewProps) => {
         const unit = item.unit || item.unitType || 'وحدة';
 
         return (
-          <Card key={index} className="border-r-4 border-r-blue-500">
+          <Card key={index} className="border-s-4 border-primary">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{String(itemName)}</CardTitle>
-                <Badge className="bg-blue-100 text-blue-800">
+                <Badge className="bg-info/15 text-info">
                   {totalQuantity} {unit}
                 </Badge>
               </div>
@@ -43,15 +43,15 @@ const DetailedItemsView = ({ data }: DetailedItemsViewProps) => {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">عدد المؤسسات الطالبة:</span>
-                  <Badge className="bg-green-100 text-green-800">
+                  <span className="text-muted-foreground">عدد المؤسسات الطالبة:</span>
+                  <Badge className="bg-success/15 text-success">
                     {institutions.length} مؤسسة
                   </Badge>
                 </div>
                 
                 {institutions.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">المؤسسات الطالبة:</p>
+                    <p className="text-sm font-medium text-foreground mb-2">المؤسسات الطالبة:</p>
                     <div className="flex flex-wrap gap-2">
                       {institutions.map((institution: any, idx: number) => (
                         <Badge key={idx} variant="outline" className="text-xs">
@@ -64,10 +64,10 @@ const DetailedItemsView = ({ data }: DetailedItemsViewProps) => {
                 
                 {requests.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">الطلبات المرتبطة:</p>
+                    <p className="text-sm font-medium text-foreground mb-2">الطلبات المرتبطة:</p>
                     <div className="flex flex-wrap gap-2">
                       {requests.map((request: any, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-xs bg-gray-50">
+                        <Badge key={idx} variant="outline" className="text-xs bg-muted/30">
                           {String(request)}
                         </Badge>
                       ))}

@@ -1,6 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Users, Package, Hash } from "lucide-react";
+import { Users, Package, ClipboardList } from "lucide-react";
 import { Request } from "@/types/dashboard";
+import { StatCard } from "@/components/common/StatCard";
 
 interface MainStatsProps {
   requests: Request[];
@@ -25,7 +25,6 @@ const MainStats = ({ requests, onStatsClick }: MainStatsProps) => {
       }
     });
     
-    console.log('Total quantity calculation:', total);
     return total;
   };
 
@@ -47,17 +46,14 @@ const MainStats = ({ requests, onStatsClick }: MainStatsProps) => {
       cancelled: { count: 0, students: 0, items: 0 }
     };
 
-    const priorityBreakdown = {
-      high: { count: 0, students: 0, items: 0 },
-      medium: { count: 0, students: 0, items: 0 },
-      low: { count: 0, students: 0, items: 0 }
-    };
+    // الأولويات ديناميكية — تُبنى من البيانات نفسها
+    const priorityBreakdown: Record<string, { count: number; students: number; items: number }> = {};
 
     const departmentBreakdown: Record<string, { count: number; students: number; items: number }> = {};
 
     requests.forEach(request => {
       const requestItems = request.requestedItems?.reduce((sum, item) => sum + item.quantity, 0) || request.quantity || 0;
-      
+
       // Status breakdown
       if (statusBreakdown[request.status as keyof typeof statusBreakdown]) {
         statusBreakdown[request.status as keyof typeof statusBreakdown].count++;
@@ -65,12 +61,13 @@ const MainStats = ({ requests, onStatsClick }: MainStatsProps) => {
         statusBreakdown[request.status as keyof typeof statusBreakdown].items += requestItems;
       }
 
-      // Priority breakdown
-      if (priorityBreakdown[request.priority as keyof typeof priorityBreakdown]) {
-        priorityBreakdown[request.priority as keyof typeof priorityBreakdown].count++;
-        priorityBreakdown[request.priority as keyof typeof priorityBreakdown].students += request.studentsAffected;
-        priorityBreakdown[request.priority as keyof typeof priorityBreakdown].items += requestItems;
+      // Priority breakdown (ديناميكي — يقبل أي أولوية)
+      if (!priorityBreakdown[request.priority]) {
+        priorityBreakdown[request.priority] = { count: 0, students: 0, items: 0 };
       }
+      priorityBreakdown[request.priority].count++;
+      priorityBreakdown[request.priority].students += request.studentsAffected;
+      priorityBreakdown[request.priority].items += requestItems;
 
       // Department breakdown
       if (!departmentBreakdown[request.department]) {
@@ -249,62 +246,30 @@ const MainStats = ({ requests, onStatsClick }: MainStatsProps) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={handleTotalRequestsClick}>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="icon-container-primary">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-3xl font-bold text-[hsl(142,60%,25%)]">{stats.total}</p>
-              <p className="text-sm font-semibold text-[hsl(142,60%,20%)] mt-1">📋 إجمالي الطلبات</p>
-              <div className="text-xs text-gray-600 mt-2 space-y-0.5">
-                <div>• تفصيل حسب الحالة والأولوية</div>
-                <div>• إحصائيات الأقسام والمؤسسات</div>
-                <div>• تحليل الطلبات والعناصر</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" onClick={handleTotalItemsClick}>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="icon-container-golden">
-              <Package className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-3xl font-bold text-[hsl(38,85%,60%)]">{stats.totalQuantity}</p>
-              <p className="text-sm font-semibold text-[hsl(38,80%,50%)] mt-1">📦 إجمالي العناصر</p>
-              <div className="text-xs text-gray-600 mt-2 space-y-0.5">
-                <div>• تفصيل كل عنصر بالكمية</div>
-                <div>• حالة الطلبات لكل عنصر</div>
-                <div>• المؤسسات الطالبة</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" onClick={handleStudentsClick}>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="icon-container-green">
-              <Hash className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-3xl font-bold text-[hsl(142,60%,25%)]">{stats.totalStudentsAffected}</p>
-              <p className="text-sm font-semibold text-[hsl(142,60%,20%)] mt-1">👥 الطلاب المتأثرين</p>
-              <div className="text-xs text-gray-600 mt-2 space-y-0.5">
-                <div>• توزيع حسب الأقسام</div>
-                <div>• تفصيل المؤسسات</div>
-                <div>• متوسط الطلاب لكل طلب</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StatCard
+        label="إجمالي الطلبات"
+        value={stats.total}
+        icon={ClipboardList}
+        tone="primary"
+        hint="تفصيل حسب الحالة والأولوية"
+        onClick={handleTotalRequestsClick}
+      />
+      <StatCard
+        label="إجمالي العناصر"
+        value={stats.totalQuantity}
+        icon={Package}
+        tone="warning"
+        hint="تفصيل كل عنصر بالكمية"
+        onClick={handleTotalItemsClick}
+      />
+      <StatCard
+        label="الطلاب المتأثرين"
+        value={stats.totalStudentsAffected}
+        icon={Users}
+        tone="success"
+        hint="توزيع حسب الأقسام والمؤسسات"
+        onClick={handleStudentsClick}
+      />
     </div>
   );
 };

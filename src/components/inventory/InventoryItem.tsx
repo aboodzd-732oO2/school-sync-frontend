@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Save, X, PlusCircle, Settings, AlertTriangle, Trash2 } from "lucide-react";
+import { Save, X, PlusCircle, Settings, AlertTriangle, Trash2, CheckCircle } from "lucide-react";
 
 interface InventoryItemType {
   id: string;
@@ -70,14 +70,14 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
   };
 
   return (
-    <div className="border border-[hsl(142,30%,85%)] rounded-lg p-4 hover:bg-[hsl(142,30%,96%)] transition-all duration-200 shadow-sm hover:shadow-md">
+    <div className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-[background-color,border-color,box-shadow,color] shadow-sm hover:shadow-md">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <div className="flex items-center space-x-3 space-x-reverse mb-2">
+          <div className="flex items-center gap-3 mb-2">
             <h3 className="font-semibold text-lg">{item.name}</h3>
             <Badge variant="outline">{item.category}</Badge>
             {item.quantity <= item.minThreshold && (
-              <Badge variant="destructive" className="flex items-center space-x-1 space-x-reverse">
+              <Badge variant="destructive" className="flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" />
                 <span>منخفض</span>
               </Badge>
@@ -86,11 +86,11 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div className="flex flex-col">
-              <span className="text-gray-600">الكمية المتوفرة</span>
+              <span className="text-muted-foreground">الكمية المتوفرة</span>
               {addingQuantity ? (
-                <div className="flex items-center space-x-2 space-x-reverse mt-1">
-                  <span className="font-bold text-[hsl(142,60%,25%)]">{item.quantity} {item.unitType}</span>
-                  <span className="text-gray-500">+</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="font-bold text-primary">{item.quantity} {item.unitType}</span>
+                  <span className="text-muted-foreground">+</span>
                   <Input
                     type="number"
                     value={quantityValue}
@@ -107,12 +107,12 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                   className="mt-1"
                 />
               ) : (
-                <span className="font-bold text-[hsl(142,60%,25%)]">{item.quantity} {item.unitType}</span>
+                <span className="font-bold text-primary">{item.quantity} {item.unitType}</span>
               )}
             </div>
             
             <div className="flex flex-col">
-              <span className="text-gray-600">حد التنبيه</span>
+              <span className="text-muted-foreground">حد التنبيه</span>
               {editingItem ? (
                 <Input
                   type="number"
@@ -126,23 +126,29 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
             </div>
             
             <div className="flex flex-col">
-              <span className="text-gray-600">الحالة</span>
-              <span className={`font-medium ${
-                item.quantity > item.minThreshold ? 'text-[hsl(142,60%,25%)]' : 'text-[hsl(38,85%,60%)]'
-              }`}>
-                {item.quantity > item.minThreshold ? '✅ متوفر' : '⚠️ منخفض'}
-              </span>
+              <span className="text-muted-foreground">الحالة</span>
+              {item.quantity > item.minThreshold ? (
+                <span className="flex items-center gap-1.5 font-medium text-success">
+                  <CheckCircle className="size-4" />
+                  متوفر
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 font-medium text-warning-foreground">
+                  <AlertTriangle className="size-4" />
+                  منخفض
+                </span>
+              )}
             </div>
           </div>
         </div>
         
-        <div className="flex space-x-2 space-x-reverse">
+        <div className="flex gap-2">
           {editingItem ? (
             <>
               <Button 
                 size="sm" 
                 onClick={handleSaveItemEdit}
-                className="bg-gradient-to-r from-[hsl(142,60%,25%)] to-[hsl(142,50%,20%)] hover:from-[hsl(142,60%,30%)] hover:to-[hsl(142,50%,25%)] text-white shadow-md hover:shadow-lg transition-all duration-200"
+                className="bg-primary hover:bg-primary-700 text-primary-foreground shadow-md hover:shadow-lg transition-[background-color,border-color,box-shadow,color]"
               >
                 <Save className="h-4 w-4" />
               </Button>
@@ -150,7 +156,7 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                 size="sm" 
                 variant="outline"
                 onClick={handleCancelItemEdit}
-                className="border-gray-300 hover:border-red-400 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+                className="border-border hover:border-red-400 hover:bg-danger/10 hover:text-danger transition-[background-color,border-color,box-shadow,color]"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -160,7 +166,7 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
               <Button 
                 size="sm" 
                 onClick={handleSaveQuantity}
-                className="bg-gradient-to-r from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] hover:from-[hsl(38,85%,65%)] hover:to-[hsl(38,90%,55%)] text-white shadow-md hover:shadow-lg transition-all duration-200"
+                className="bg-warning/20 hover:bg-warning/30 text-warning-foreground shadow-md hover:shadow-lg transition-[background-color,border-color,box-shadow,color]"
               >
                 <Save className="h-4 w-4" />
               </Button>
@@ -168,7 +174,7 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                 size="sm" 
                 variant="outline"
                 onClick={handleCancelQuantity}
-                className="border-gray-300 hover:border-red-400 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+                className="border-border hover:border-red-400 hover:bg-danger/10 hover:text-danger transition-[background-color,border-color,box-shadow,color]"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -179,16 +185,16 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                 size="sm" 
                 variant="destructive"
                 onClick={handleConfirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                className="bg-danger hover:bg-danger text-white shadow-md hover:shadow-lg transition-[background-color,border-color,box-shadow,color]"
               >
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 ms-1" />
                 تأكيد الحذف
               </Button>
               <Button 
                 size="sm" 
                 variant="outline"
                 onClick={handleCancelDelete}
-                className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
+                className="border-border hover:border-border hover:bg-muted/30 transition-[background-color,border-color,box-shadow,color]"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -199,9 +205,9 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                 size="sm" 
                 variant="outline"
                 onClick={() => setAddingQuantity(true)}
-                className="border-[hsl(38,70%,50%)] bg-[hsl(38,30%,96%)] text-[hsl(38,80%,50%)] hover:bg-[hsl(38,40%,94%)] hover:border-[hsl(38,85%,60%)] hover:text-[hsl(38,85%,60%)] shadow-sm hover:shadow-md transition-all duration-200 font-medium"
+                className="border-warning/30 bg-warning/10 text-muted-foreground hover:bg-warning/20 hover:border-warning hover:text-warning-foreground shadow-sm hover:shadow-md transition-[background-color,border-color,box-shadow,color] font-medium"
               >
-                <PlusCircle className="h-4 w-4 mr-1" />
+                <PlusCircle className="h-4 w-4 ms-1" />
                 إضافة كمية
               </Button>
               <Button 
@@ -212,18 +218,18 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                   setEditQuantity(item.quantity);
                   setEditThreshold(item.minThreshold);
                 }}
-                className="border-[hsl(142,50%,30%)] bg-[hsl(142,30%,96%)] text-[hsl(142,60%,25%)] hover:bg-[hsl(142,40%,94%)] hover:border-[hsl(142,50%,25%)] hover:text-[hsl(142,60%,30%)] shadow-sm hover:shadow-md transition-all duration-200 font-medium"
+                className="border-primary/30 bg-muted/50 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary shadow-sm hover:shadow-md transition-[background-color,border-color,box-shadow,color] font-medium"
               >
-                <Settings className="h-4 w-4 mr-1" />
+                <Settings className="h-4 w-4 ms-1" />
                 تعديل
               </Button>
               <Button 
                 size="sm" 
                 variant="outline"
                 onClick={handleDeleteClick}
-                className="border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-400 hover:text-red-800 shadow-sm hover:shadow-md transition-all duration-200 font-medium"
+                className="border-danger/40 bg-danger/10 text-danger hover:bg-danger/15 hover:border-red-400 hover:text-danger shadow-sm hover:shadow-md transition-[background-color,border-color,box-shadow,color] font-medium"
               >
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 ms-1" />
                 حذف
               </Button>
             </>

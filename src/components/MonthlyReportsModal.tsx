@@ -49,8 +49,8 @@ const MonthlyReportsModal = ({ isOpen, onClose, institutionName }: MonthlyReport
     }
   }, [isOpen]);
 
-  const handleDownloadReport = (report: MonthlyReport) => {
-    ReportService.generateMonthlyPDF(report, institutionName);
+  const handleDownloadReport = async (report: MonthlyReport) => {
+    await ReportService.generateMonthlyPDF(report, institutionName);
   };
 
   const getCompletionRate = (report: MonthlyReport) => {
@@ -75,9 +75,9 @@ const MonthlyReportsModal = ({ isOpen, onClose, institutionName }: MonthlyReport
         <div className="mt-4">
           {reports.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">لا توجد تقارير شهرية بعد</p>
-              <p className="text-sm text-gray-400 mt-2">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">لا توجد تقارير شهرية بعد</p>
+              <p className="text-sm text-muted-foreground mt-2">
                 سيتم إنشاء التقارير تلقائياً في بداية كل شهر
               </p>
             </div>
@@ -93,7 +93,7 @@ const MonthlyReportsModal = ({ isOpen, onClose, institutionName }: MonthlyReport
                           {getCompletionRate(report)}% مكتمل
                         </Badge>
                       </CardTitle>
-                      <div className="flex items-center text-sm text-gray-500 space-x-1 space-x-reverse">
+                      <div className="flex items-center text-sm text-muted-foreground space-x-1 space-x-reverse">
                         <Calendar className="h-4 w-4" />
                         <span>
                           {new Date(report.generatedDate).toLocaleDateString('ar-EG')}
@@ -103,19 +103,19 @@ const MonthlyReportsModal = ({ isOpen, onClose, institutionName }: MonthlyReport
                     <CardContent>
                       <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                         <div className="flex items-center space-x-1 space-x-reverse">
-                          <FileText className="h-4 w-4 text-blue-500" />
+                          <FileText className="h-4 w-4 text-info" />
                           <span>{report.totalRequests} طلب</span>
                         </div>
                         <div className="flex items-center space-x-1 space-x-reverse">
-                          <Package className="h-4 w-4 text-green-500" />
+                          <Package className="h-4 w-4 text-success" />
                           <span>{report.totalItems} عنصر</span>
                         </div>
                         <div className="flex items-center space-x-1 space-x-reverse">
-                          <Users className="h-4 w-4 text-purple-500" />
+                          <Users className="h-4 w-4 text-tertiary" />
                           <span>{report.totalStudentsAffected} طالب</span>
                         </div>
                         <div className="flex items-center space-x-1 space-x-reverse">
-                          <TrendingUp className="h-4 w-4 text-orange-500" />
+                          <TrendingUp className="h-4 w-4 text-warning-foreground" />
                           <span>{report.completedRequests} مكتمل</span>
                         </div>
                       </div>
@@ -123,15 +123,15 @@ const MonthlyReportsModal = ({ isOpen, onClose, institutionName }: MonthlyReport
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs">
                           <span>مكتمل:</span>
-                          <span className="text-green-600">{report.completedRequests}</span>
+                          <span className="text-success">{report.completedRequests}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                           <span>قيد التنفيذ:</span>
-                          <span className="text-blue-600">{report.inProgressRequests}</span>
+                          <span className="text-info">{report.inProgressRequests}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                           <span>قيد الانتظار:</span>
-                          <span className="text-yellow-600">{report.pendingRequests}</span>
+                          <span className="text-warning-foreground">{report.pendingRequests}</span>
                         </div>
                       </div>
                       
@@ -140,7 +140,7 @@ const MonthlyReportsModal = ({ isOpen, onClose, institutionName }: MonthlyReport
                         className="w-full mt-4"
                         size="sm"
                       >
-                        <Download className="h-4 w-4 ml-2" />
+                        <Download className="h-4 w-4 me-2" />
                         تحميل التقرير
                       </Button>
                     </CardContent>

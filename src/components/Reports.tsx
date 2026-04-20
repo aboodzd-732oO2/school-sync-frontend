@@ -8,6 +8,9 @@ import { FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useToast } from "@/hooks/use-toast";
 import MonthlyReportsModal from "./MonthlyReportsModal";
+import { usePriorities, useDepartments } from "@/hooks/useLookups";
+import { getStatusLabel } from "@/lib/statusConfig";
+import { setupArabicFont } from "@/services/reportService";
 
 interface Request {
   id: string;
@@ -34,83 +37,56 @@ const Reports = ({ requests }: ReportsProps) => {
   const { toast } = useToast();
   const [showMonthlyReports, setShowMonthlyReports] = useState(false);
 
-  const getDepartmentText = (department: string) => {
-    switch (department) {
-      case 'materials': return 'المواد';
-      case 'maintenance': return 'الصيانة';
-      case 'academic-materials': return 'المواد الأكاديمية';
-      case 'technology': return 'التكنولوجيا';
-      case 'safety': return 'السلامة';
-      default: return department;
-    }
-  };
+  const { getLabel: getDeptLabel } = useDepartments();
+  const getDepartmentText = (department: string) =>
+    getDeptLabel(department).replace(/^قسم\s*/, '');
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return 'قيد الانتظار';
-      case 'in-progress': return 'قيد التنفيذ';
-      case 'completed': return 'مكتمل';
-      default: return status;
-    }
-  };
+  const getStatusText = (status: string) =>
+    getStatusLabel(status).replace(/^[^\s]+\s/, '');
 
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'عالية';
-      case 'medium': return 'متوسطة';
-      case 'low': return 'منخفضة';
-      default: return priority;
-    }
-  };
+  const { getLabel: getPriorityLabel, isHighPriority } = usePriorities();
+  const getPriorityText = (priority: string) => getPriorityLabel(priority);
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     const pdf = new jsPDF();
-    
-    // Add Arabic font support (Note: This is a basic implementation)
-    pdf.setFont('helvetica');
-    
-    // Title
+    await setupArabicFont(pdf);
+
     pdf.setFontSize(20);
-    pdf.text('School Management System Report', 20, 30);
-    
-    // Date
+    pdf.text('تقرير نظام إدارة المدرسة', 190, 30, { align: 'right' });
+
     pdf.setFontSize(12);
-    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 50);
-    
-    // Summary
+    pdf.text(`تاريخ التوليد: ${new Date().toLocaleDateString('ar-EG')}`, 190, 50, { align: 'right' });
+
     pdf.setFontSize(16);
-    pdf.text('Summary Statistics:', 20, 70);
-    
+    pdf.text('الإحصائيات الملخصة:', 190, 70, { align: 'right' });
+
     pdf.setFontSize(12);
-    pdf.text(`Total Requests: ${requests.length}`, 20, 90);
-    pdf.text(`Completed: ${requests.filter(r => r.status === 'completed').length}`, 20, 105);
-    pdf.text(`In Progress: ${requests.filter(r => r.status === 'in-progress').length}`, 20, 120);
-    pdf.text(`Pending: ${requests.filter(r => r.status === 'pending').length}`, 20, 135);
-    pdf.text(`Total Items: ${requests.reduce((sum, r) => sum + r.quantity, 0)}`, 20, 150);
-    pdf.text(`Students Affected: ${requests.reduce((sum, r) => sum + r.studentsAffected, 0)}`, 20, 165);
-    
-    // Request details
+    pdf.text(`إجمالي الطلبات: ${requests.length}`, 190, 90, { align: 'right' });
+    pdf.text(`المكتمل: ${requests.filter(r => r.status === 'completed').length}`, 190, 105, { align: 'right' });
+    pdf.text(`قيد التنفيذ: ${requests.filter(r => r.status === 'in-progress').length}`, 190, 120, { align: 'right' });
+    pdf.text(`قيد الانتظار: ${requests.filter(r => r.status === 'pending').length}`, 190, 135, { align: 'right' });
+    pdf.text(`إجمالي العناصر: ${requests.reduce((sum, r) => sum + r.quantity, 0)}`, 190, 150, { align: 'right' });
+    pdf.text(`الطلاب المتأثرون: ${requests.reduce((sum, r) => sum + r.studentsAffected, 0)}`, 190, 165, { align: 'right' });
+
     pdf.setFontSize(16);
-    pdf.text('Request Details:', 20, 190);
-    
+    pdf.text('تفاصيل الطلبات:', 190, 190, { align: 'right' });
+
     let yPosition = 210;
     pdf.setFontSize(10);
-    
+
     requests.slice(0, 10).forEach((request, index) => {
       if (yPosition > 270) {
         pdf.addPage();
         yPosition = 30;
       }
-      
-      pdf.text(`${index + 1}. ${request.title}`, 20, yPosition);
-      pdf.text(`   Status: ${getStatusText(request.status)}`, 25, yPosition + 10);
-      pdf.text(`   Department: ${getDepartmentText(request.department)}`, 25, yPosition + 20);
-      pdf.text(`   Quantity: ${request.quantity} ${request.unitType}`, 25, yPosition + 30);
-      
+      pdf.text(`${index + 1}. ${request.title}`, 190, yPosition, { align: 'right' });
+      pdf.text(`الحالة: ${getStatusText(request.status)}`, 185, yPosition + 10, { align: 'right' });
+      pdf.text(`القسم: ${getDepartmentText(request.department)}`, 185, yPosition + 20, { align: 'right' });
+      pdf.text(`الكمية: ${request.quantity} ${request.unitType}`, 185, yPosition + 30, { align: 'right' });
       yPosition += 45;
     });
-    
-    pdf.save('school-management-report.pdf');
+
+    pdf.save('تقرير-إدارة-المدرسة.pdf');
     
     toast({
       title: "تم إنشاء التقرير",
@@ -167,8 +143,8 @@ const Reports = ({ requests }: ReportsProps) => {
     : 0;
 
   // High priority items that need attention
-  const urgentRequests = requests.filter(r => 
-    r.priority === 'high' && r.status !== 'completed'
+  const urgentRequests = requests.filter(r =>
+    isHighPriority(r.priority) && r.status !== 'completed'
   ).slice(0, 5);
 
   // Get institution name from localStorage
@@ -184,18 +160,18 @@ const Reports = ({ requests }: ReportsProps) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">تقارير نظام إدارة المدرسة</h1>
-        <p className="text-gray-600 mt-2">تحليل شامل لطلبات الصيانة والمواد</p>
+        <h1 className="text-3xl font-bold text-foreground">تقارير نظام إدارة المدرسة</h1>
+        <p className="text-muted-foreground mt-2">تحليل شامل لطلبات الصيانة والمواد</p>
         <div className="flex justify-center space-x-4 space-x-reverse mt-4">
           <Button onClick={generatePDF}>
-            <FileText className="h-4 w-4 ml-2" />
+            <FileText className="h-4 w-4 me-2" />
             تحميل التقرير الحالي
           </Button>
           <Button 
             onClick={() => setShowMonthlyReports(true)}
             variant="outline"
           >
-            <FileText className="h-4 w-4 ml-2" />
+            <FileText className="h-4 w-4 me-2" />
             التقارير الشهرية المؤرشفة
           </Button>
         </div>
@@ -205,30 +181,30 @@ const Reports = ({ requests }: ReportsProps) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-2xl font-bold text-blue-600">{requests.length}</div>
-            <div className="text-sm text-gray-600">إجمالي الطلبات</div>
+            <div className="text-2xl font-bold text-info">{requests.length}</div>
+            <div className="text-sm text-muted-foreground">إجمالي الطلبات</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-2xl font-bold text-green-600">{completionRate}%</div>
-            <div className="text-sm text-gray-600">معدل الإنجاز</div>
+            <div className="text-2xl font-bold text-success">{completionRate}%</div>
+            <div className="text-sm text-muted-foreground">معدل الإنجاز</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-warning-foreground">
               {requests.reduce((sum, r) => sum + r.quantity, 0)}
             </div>
-            <div className="text-sm text-gray-600">إجمالي العناصر</div>
+            <div className="text-sm text-muted-foreground">إجمالي العناصر</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-tertiary">
               {requests.reduce((sum, r) => sum + r.studentsAffected, 0)}
             </div>
-            <div className="text-sm text-gray-600">الطلاب المتأثرين</div>
+            <div className="text-sm text-muted-foreground">الطلاب المتأثرين</div>
           </CardContent>
         </Card>
       </div>
@@ -313,13 +289,13 @@ const Reports = ({ requests }: ReportsProps) => {
         <CardContent>
           <div className="space-y-3">
             {urgentRequests.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">لا توجد طلبات عاجلة</p>
+              <p className="text-muted-foreground text-center py-4">لا توجد طلبات عاجلة</p>
             ) : (
               urgentRequests.map((request) => (
-                <div key={request.id} className="border-l-4 border-red-500 pl-4">
+                <div key={request.id} className="border-e-4 border-danger pe-4">
                   <div className="font-medium text-sm">{request.title}</div>
-                  <div className="text-xs text-gray-500">{request.location}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">{request.location}</div>
+                  <div className="text-xs text-muted-foreground">
                     {request.quantity} {request.unitType} • {request.studentsAffected} طالب متأثر
                   </div>
                 </div>
@@ -361,12 +337,12 @@ const Reports = ({ requests }: ReportsProps) => {
               <h4 className="font-semibold mb-3">التوصيات</h4>
               <ul className="space-y-2 text-sm">
                 {urgentRequests.length > 0 && (
-                  <li className="text-red-600">• معالجة {urgentRequests.length} طلبات عالية الأولوية فوراً</li>
+                  <li className="text-danger">• معالجة {urgentRequests.length} طلبات عالية الأولوية فوراً</li>
                 )}
                 {completionRate < 70 && (
-                  <li className="text-blue-600">• تحسين معدل الإنجاز (حالياً {completionRate}%)</li>
+                  <li className="text-info">• تحسين معدل الإنجاز (حالياً {completionRate}%)</li>
                 )}
-                <li className="text-green-600">• تطوير خطة صيانة وقائية للمناطق عالية الطلب</li>
+                <li className="text-success">• تطوير خطة صيانة وقائية للمناطق عالية الطلب</li>
               </ul>
             </div>
           </div>

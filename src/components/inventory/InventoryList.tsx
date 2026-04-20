@@ -1,7 +1,8 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Package, Search } from "lucide-react";
 import InventoryItem from "./InventoryItem";
+import { EmptyState } from "@/components/common/EmptyState";
 
 interface InventoryItemType {
   id: string;
@@ -24,11 +25,11 @@ interface InventoryListProps {
   onDeleteItem: (itemId: string) => void;
 }
 
-const InventoryList = ({ 
-  inventory, 
-  searchTerm, 
-  onSearchChange, 
-  onSaveThreshold, 
+const InventoryList = ({
+  inventory,
+  searchTerm,
+  onSearchChange,
+  onSaveThreshold,
   onAddQuantity,
   onUpdateItem,
   onDeleteItem
@@ -41,30 +42,34 @@ const InventoryList = ({
   return (
     <>
       {/* Search */}
-      <div className="flex items-center space-x-2 space-x-reverse">
+      <div className="relative max-w-md">
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="🔍 ابحث في المخزون..."
+          placeholder="ابحث في المخزون..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-md"
+          className="ps-10"
         />
       </div>
 
       {/* Inventory List */}
-      <Card className="border-[hsl(142,30%,85%)]">
-        <CardHeader className="bg-gradient-to-r from-[hsl(142,60%,25%)] to-[hsl(142,50%,20%)] text-white">
-          <CardTitle className="text-white">قائمة المخزون</CardTitle>
-          <CardDescription className="text-white/90">
+      <Card className="border-border">
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <Package className="size-5 text-primary" />
+            <span>قائمة المخزون</span>
+          </CardTitle>
+          <CardDescription>
             جميع العناصر المتوفرة في مخزون القسم
           </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredInventory.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📦</div>
-              <p className="text-gray-500 text-lg">لا توجد عناصر في المخزون</p>
-              <p className="text-gray-400 text-sm mt-2">ابدأ بإضافة عناصر جديدة للمخزون</p>
-            </div>
+            <EmptyState
+              icon={Package}
+              title={searchTerm ? 'لم يتم العثور على عناصر' : 'لا توجد عناصر في المخزون'}
+              description={searchTerm ? 'جرّب البحث بكلمات أخرى' : 'ابدأ بإضافة عناصر جديدة للمخزون'}
+            />
           ) : (
             <div className="space-y-4">
               {filteredInventory.map((item) => (

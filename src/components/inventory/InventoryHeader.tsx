@@ -1,6 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { Plus, Package } from "lucide-react";
+import { useDepartments } from "@/hooks/useLookups";
 
 interface InventoryHeaderProps {
   department: string;
@@ -8,29 +8,26 @@ interface InventoryHeaderProps {
 }
 
 const InventoryHeader = ({ department, onAddClick }: InventoryHeaderProps) => {
-  const getDepartmentName = (dept: string) => {
-    switch (dept) {
-      case 'materials': return 'المواد والأثاث';
-      case 'maintenance': return 'الصيانة والإصلاح';
-      case 'academic-materials': return 'المواد الأكاديمية والكتب';
-      case 'technology': return 'التقنيات التعليمية';
-      case 'safety': return 'السلامة والأمان';
-      default: return dept;
-    }
-  };
+  const { getLabel: getDeptLabel } = useDepartments();
+  const getDepartmentName = (dept: string) =>
+    getDeptLabel(dept).replace(/^قسم\s*/, '');
 
   return (
-    <div className="flex items-center justify-between p-6 bg-gradient-to-r from-[hsl(142,60%,25%)] to-[hsl(142,50%,20%)] rounded-2xl shadow-lg border border-[hsl(142,50%,15%)]">
-      <div>
-        <h2 className="text-2xl font-bold text-white flex items-center space-x-2 space-x-reverse">
-          <Package className="h-6 w-6" />
-          <span>إدارة المخزون</span>
-        </h2>
-        <p className="text-white/90 font-medium">إدارة مخزون قسم {getDepartmentName(department)}</p>
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Package className="size-5" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">إدارة المخزون</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            مخزون قسم <span className="font-medium text-foreground">{getDepartmentName(department)}</span>
+          </p>
+        </div>
       </div>
-      <Button onClick={onAddClick} className="bg-gradient-to-r from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] hover:from-[hsl(38,85%,65%)] hover:to-[hsl(38,90%,55%)] text-white shadow-lg">
-        <Plus className="h-4 w-4 mr-2" />
-        إضافة عنصر جديد
+      <Button onClick={onAddClick}>
+        <Plus className="size-4 me-2" />
+        إضافة عنصر
       </Button>
     </div>
   );

@@ -22,9 +22,9 @@ const LowStockAlert = ({ lowStockItems }: LowStockAlertProps) => {
   if (lowStockItems.length === 0) return null;
 
   return (
-    <Card className="border-[hsl(38,70%,50%)] bg-gradient-to-br from-[hsl(38,30%,96%)] to-white">
-      <CardHeader className="bg-gradient-to-r from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] text-white">
-        <CardTitle className="text-white flex items-center space-x-2 space-x-reverse">
+    <Card className="border-warning/30 bg-warning/10">
+      <CardHeader className="bg-warning text-warning-foreground">
+        <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
           <span>تنبيه: عناصر على وشك النفاذ</span>
         </CardTitle>
@@ -32,9 +32,9 @@ const LowStockAlert = ({ lowStockItems }: LowStockAlertProps) => {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {lowStockItems.map(item => (
-            <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded border border-[hsl(38,30%,85%)]">
-              <span className="font-medium text-[hsl(142,60%,20%)]">{item.name}</span>
-              <Badge className="bg-[hsl(38,85%,60%)] text-white border-[hsl(38,90%,50%)]">
+            <div key={item.id} className="flex items-center justify-between bg-card p-3 rounded border border-warning/30">
+              <span className="font-medium text-primary">{item.name}</span>
+              <Badge className="bg-warning text-warning-foreground border-warning">
                 {item.quantity} {item.unitType} متبقي
               </Badge>
             </div>

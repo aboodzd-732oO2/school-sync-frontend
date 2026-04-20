@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Trash2, AlertTriangle, Info } from "lucide-react";
 import { InventoryService } from "@/services/inventoryService";
 
 interface ItemToAdd {
@@ -60,7 +60,6 @@ const ItemFormCard = ({
   };
 
   const handleSelectChange = (value: string) => {
-    console.log('Selected item:', value);
     onUpdate(item.id, 'selectedItem', value);
     if (value !== 'أخرى') {
       onUpdate(item.id, 'customItemName', '');
@@ -72,7 +71,7 @@ const ItemFormCard = ({
   };
 
   return (
-    <Card className="border-2 border-gray-200">
+    <Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">العنصر {index + 1}</CardTitle>
@@ -82,7 +81,7 @@ const ItemFormCard = ({
               variant="outline" 
               size="sm"
               onClick={() => onRemove(item.id)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-danger hover:text-danger hover:bg-danger/10"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -97,7 +96,7 @@ const ItemFormCard = ({
             onValueChange={handleSelectChange}
           >
             <SelectTrigger 
-              className={`w-full ${errors[`selectedItem_${item.id}`] ? "border-red-500" : ""}`}
+              className={`w-full ${errors[`selectedItem_${item.id}`] ? "border-danger" : ""}`}
               id={`selectedItem_${item.id}`}
             >
               <SelectValue placeholder="اختر العنصر من القائمة" />
@@ -111,7 +110,7 @@ const ItemFormCard = ({
             </SelectContent>
           </Select>
           {errors[`selectedItem_${item.id}`] && (
-            <p className="text-red-500 text-sm mt-1">{errors[`selectedItem_${item.id}`]}</p>
+            <p className="text-danger text-sm mt-1">{errors[`selectedItem_${item.id}`]}</p>
           )}
         </div>
 
@@ -124,27 +123,33 @@ const ItemFormCard = ({
               value={item.customItemName || ''}
               onChange={(e) => handleCustomItemChange(e.target.value)}
               placeholder="اكتب وصف العنصر المخصص"
-              className={errors[`customItemName_${item.id}`] ? "border-red-500" : ""}
+              className={errors[`customItemName_${item.id}`] ? "border-danger" : ""}
             />
             {errors[`customItemName_${item.id}`] && (
-              <p className="text-red-500 text-sm mt-1">{errors[`customItemName_${item.id}`]}</p>
+              <p className="text-danger text-sm mt-1">{errors[`customItemName_${item.id}`]}</p>
             )}
           </div>
         )}
 
         {/* تنبيه العنصر المكرر في النموذج */}
         {checkIfItemDuplicated() && (
-          <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
-            <p className="text-orange-800 text-sm font-medium">⚠️ هذا العنصر مختار بالفعل في عنصر آخر</p>
-            <p className="text-orange-600 text-xs mt-1">يرجى اختيار عنصر مختلف أو حذف أحد العناصر المكررة</p>
+          <div className="bg-warning/10 border border-warning/30 rounded-md p-3 flex items-start gap-2">
+            <AlertTriangle className="size-5 text-warning-foreground shrink-0 mt-0.5" />
+            <div>
+              <p className="text-warning-foreground text-sm font-medium">هذا العنصر مختار بالفعل في عنصر آخر</p>
+              <p className="text-warning-foreground text-xs mt-1">يرجى اختيار عنصر مختلف أو حذف أحد العناصر المكررة</p>
+            </div>
           </div>
         )}
-          
+
         {/* تنبيه وجود العنصر في المخزون */}
         {checkIfItemExists() && !checkIfItemDuplicated() && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-blue-800 text-sm font-medium">ℹ️ هذا العنصر موجود بالفعل في المخزون</p>
-            <p className="text-blue-600 text-xs mt-1">سيتم إضافة الكمية الجديدة إلى الكمية الموجودة</p>
+          <div className="bg-info/10 border border-info/30 rounded-md p-3 flex items-start gap-2">
+            <Info className="size-5 text-info shrink-0 mt-0.5" />
+            <div>
+              <p className="text-info text-sm font-medium">هذا العنصر موجود بالفعل في المخزون</p>
+              <p className="text-info text-xs mt-1">سيتم إضافة الكمية الجديدة إلى الكمية الموجودة</p>
+            </div>
           </div>
         )}
 
@@ -158,10 +163,10 @@ const ItemFormCard = ({
               value={item.quantity || ''}
               onChange={(e) => onUpdate(item.id, 'quantity', parseInt(e.target.value) || 0)}
               placeholder="أدخل الكمية"
-              className={errors[`quantity_${item.id}`] ? "border-red-500" : ""}
+              className={errors[`quantity_${item.id}`] ? "border-danger" : ""}
             />
             {errors[`quantity_${item.id}`] && (
-              <p className="text-red-500 text-sm mt-1">{errors[`quantity_${item.id}`]}</p>
+              <p className="text-danger text-sm mt-1">{errors[`quantity_${item.id}`]}</p>
             )}
           </div>
 
@@ -174,12 +179,12 @@ const ItemFormCard = ({
               value={item.minThreshold || ''}
               onChange={(e) => onUpdate(item.id, 'minThreshold', parseInt(e.target.value) || 0)}
               placeholder="0"
-              className={errors[`minThreshold_${item.id}`] ? "border-red-500" : ""}
+              className={errors[`minThreshold_${item.id}`] ? "border-danger" : ""}
             />
             {errors[`minThreshold_${item.id}`] && (
-              <p className="text-red-500 text-sm mt-1">{errors[`minThreshold_${item.id}`]}</p>
+              <p className="text-danger text-sm mt-1">{errors[`minThreshold_${item.id}`]}</p>
             )}
-            <p className="text-gray-500 text-sm mt-1">سيظهر تنبيه عندما تصل الكمية لهذا الحد</p>
+            <p className="text-muted-foreground text-sm mt-1">سيظهر تنبيه عندما تصل الكمية لهذا الحد</p>
           </div>
         </div>
       </CardContent>

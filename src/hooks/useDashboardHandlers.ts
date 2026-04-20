@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Request, StatsModalState } from "@/types/dashboard";
 import { InventoryReturnService } from "@/services/inventoryReturnService";
+import { usePriorities } from "@/hooks/useLookups";
 
 export const useDashboardHandlers = (
   requests: Request[],
@@ -11,6 +12,7 @@ export const useDashboardHandlers = (
   onUpdateRequest?: (updatedRequest: Request) => void
 ) => {
   const { toast } = useToast();
+  const { isHighPriority } = usePriorities();
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<Request | null>(null);
@@ -98,20 +100,14 @@ export const useDashboardHandlers = (
   const handleReportUndelivered = async (id: string, title: string) => {
     const request = requests.find(r => r.id === id);
     if (!request) {
-      console.error('❌ لم يتم العثور على الطلب:', id);
+      console.error('لم يتم العثور على الطلب:', id);
       return;
     }
 
-    console.log('🚨 بدء معالجة عدم الاستلام للطلب:', request);
-
     try {
-      // إعادة العناصر للمخزون مع تسجيل مفصل
-      console.log('🔄 بدء إرجاع العناصر للمخزون...');
       await InventoryReturnService.returnItemsToInventory(request);
-      console.log('✅ تم إرجاع العناصر للمخزون بنجاح');
 
       // تغيير الحالة إلى "لم يتم الاستلام"
-      console.log('🔄 تحديث حالة الطلب إلى undelivered...');
       onUpdateStatus(id, 'undelivered');
       
       toast({
@@ -122,11 +118,10 @@ export const useDashboardHandlers = (
 
       // جدولة إعادة الإرسال التلقائي بعد 5 ثوانٍ
       setTimeout(() => {
-        console.log('🔄 بدء إعادة الإرسال التلقائي للطلب:', id);
         onUpdateStatus(id, 'pending');
         
         toast({
-          title: "🔄 إعادة الإرسال التلقائي",
+          title: "إعادة الإرسال التلقائي",
           description: `تم إعادة إرسال الطلب "${title}" تلقائياً للمستودع`,
           duration: 5000,
         });
@@ -135,16 +130,15 @@ export const useDashboardHandlers = (
       // تنبيه للمستودع عن الطلب غير المستلم
       setTimeout(() => {
         toast({
-          title: "🔔 تنبيه للمستودع",
+          title: "تنبيه للمستودع",
           description: `طلب غير مستلم تم إعادة إرساله: "${title}"`,
           duration: 5000,
           variant: "destructive"
         });
       }, 7000);
 
-      console.log('✅ تم إكمال معالجة عدم الاستلام مع إعادة الإرسال التلقائي');
     } catch (error) {
-      console.error('❌ خطأ في معالجة عدم الاستلام:', error);
+      console.error('خطأ في معالجة عدم الاستلام:', error);
       toast({
         title: "خطأ في المعالجة",
         description: "حدث خطأ أثناء معالجة عدم الاستلام",
@@ -174,7 +168,7 @@ export const useDashboardHandlers = (
         filteredRequestsForModal = requests.filter(r => r.status === 'completed');
         break;
       case 'highPriority':
-        filteredRequestsForModal = requests.filter(r => r.priority === 'high');
+        filteredRequestsForModal = requests.filter(r => isHighPriority(r.priority));
         break;
       case 'undelivered':
         filteredRequestsForModal = requests.filter(r => r.status === 'undelivered');

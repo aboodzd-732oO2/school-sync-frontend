@@ -1,20 +1,23 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useInstitutionTypes } from "@/hooks/useLookups";
 
 interface InstitutionsSummaryViewProps {
   requestsData: any[];
 }
 
 const InstitutionsSummaryView = ({ requestsData }: InstitutionsSummaryViewProps) => {
+  const { getLabel: getInstitutionTypeLabel } = useInstitutionTypes();
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'in-progress': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-warning/15 text-warning-foreground';
+      case 'approved': return 'bg-success/15 text-success';
+      case 'rejected': return 'bg-danger/15 text-danger';
+      case 'completed': return 'bg-info/15 text-info';
+      case 'in-progress': return 'bg-tertiary/15 text-tertiary';
+      default: return 'bg-muted/50 text-foreground';
     }
   };
 
@@ -44,7 +47,7 @@ const InstitutionsSummaryView = ({ requestsData }: InstitutionsSummaryViewProps)
         existing.statuses.push(request.status);
       } else {
         institutionsMap.set(institutionName, {
-          type: request.institutionType === 'school' ? 'مدرسة' : 'جامعة',
+          type: getInstitutionTypeLabel(request.institutionType),
           governorate: request.governorate || request.location,
           requestsCount: 1,
           totalItems: itemsCount,
@@ -63,12 +66,12 @@ const InstitutionsSummaryView = ({ requestsData }: InstitutionsSummaryViewProps)
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600 mb-4">
+      <div className="text-sm text-muted-foreground mb-4">
         إجمالي المؤسسات: {institutionsSummary.length} مؤسسة
       </div>
       
       {institutionsSummary.map((institution, index) => (
-        <Card key={index} className="border-r-4 border-r-purple-500">
+        <Card key={index} className="border-s-4 border-purple-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
@@ -78,10 +81,10 @@ const InstitutionsSummaryView = ({ requestsData }: InstitutionsSummaryViewProps)
                 </CardDescription>
               </div>
               <div className="flex flex-col items-end space-y-1">
-                <Badge className="bg-purple-100 text-purple-800">
+                <Badge className="bg-tertiary/15 text-tertiary">
                   {institution.requestsCount} طلب
                 </Badge>
-                <Badge className="bg-orange-100 text-orange-800">
+                <Badge className="bg-warning/15 text-warning-foreground">
                   {institution.totalItems} عنصر
                 </Badge>
               </div>
@@ -90,7 +93,7 @@ const InstitutionsSummaryView = ({ requestsData }: InstitutionsSummaryViewProps)
           <CardContent>
             <div className="space-y-2">
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">حالات الطلبات:</p>
+                <p className="text-sm font-medium text-foreground mb-2">حالات الطلبات:</p>
                 <div className="flex flex-wrap gap-2">
                   {Array.from(new Set(institution.statuses)).map((status, idx) => (
                     <Badge key={idx} className={getStatusColor(status)}>

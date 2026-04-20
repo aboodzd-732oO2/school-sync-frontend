@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Playwright
+test-results/
+playwright-report/
+
+# Accidental sed backup (huge)
+src/components/stats/sedJF7XSk
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

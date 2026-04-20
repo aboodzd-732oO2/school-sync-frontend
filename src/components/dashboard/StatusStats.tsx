@@ -1,7 +1,8 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Clock, AlertTriangle, CheckCircle } from "lucide-react";
+import { FileText, Clock, RefreshCw, CheckCircle, Flame, BarChart3 } from "lucide-react";
 import { Request } from "@/types/dashboard";
+import { usePriorities } from "@/hooks/useLookups";
+import { StatCard } from "@/components/common/StatCard";
 
 interface StatusStatsProps {
   requests: Request[];
@@ -9,6 +10,7 @@ interface StatusStatsProps {
 }
 
 const StatusStats = ({ requests, onStatsClick }: StatusStatsProps) => {
+  const { isHighPriority } = usePriorities();
   // Filter out rejected and cancelled requests from main tracking
   const activeRequests = requests.filter(r => r.status !== 'rejected' && r.status !== 'cancelled');
   
@@ -33,7 +35,7 @@ const StatusStats = ({ requests, onStatsClick }: StatusStatsProps) => {
   };
 
   const calculateHighPriorityStats = () => {
-    const highPriorityRequests = activeRequests.filter(r => r.priority === 'high');
+    const highPriorityRequests = activeRequests.filter(r => isHighPriority(r.priority));
     const statusBreakdown: Record<string, number> = {};
     
     highPriorityRequests.forEach(r => {
@@ -123,7 +125,7 @@ const StatusStats = ({ requests, onStatsClick }: StatusStatsProps) => {
         break;
       case 'highPriority':
         detailedData = {
-          requests: activeRequests.filter(r => r.priority === 'high'),
+          requests: activeRequests.filter(r => isHighPriority(r.priority)),
           stats: stats.highPriority,
           tips: [
             `${stats.highPriority.urgentRequests} طلب عاجل يحتاج متابعة`,
@@ -139,109 +141,52 @@ const StatusStats = ({ requests, onStatsClick }: StatusStatsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Main Tracking Stats - Active Requests Only */}
       <div>
-        <h3 className="text-xl font-bold text-[hsl(142,60%,25%)] mb-6">📊 متابعة الطلبات النشطة</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="cursor-pointer card-hover border-2 border-[hsl(142,30%,85%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,30%)] transition-all duration-300" 
-                onClick={() => handleStatsClick('draft', 'تفاصيل المسودات')}>
-            <CardContent className="p-5">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <div className="p-2.5 bg-gradient-to-br from-[hsl(142,50%,35%)] to-[hsl(142,60%,25%)] rounded-xl shadow-lg">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-2xl font-bold text-[hsl(142,60%,25%)]">{stats.draft.count}</p>
-                  <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">📝 مسودة</p>
-                  <div className="text-xs text-gray-500 mt-1.5 space-y-0.5">
-                    <div>👥 {stats.draft.students} طالب</div>
-                    <div>📦 {stats.draft.items} عنصر</div>
-                    <div>🏢 {stats.draft.institutions} مؤسسة</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" 
-                onClick={() => handleStatsClick('pending', 'تفاصيل الطلبات قيد الانتظار')}>
-            <CardContent className="p-5">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <div className="p-2.5 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg">
-                  <Clock className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-2xl font-bold text-[hsl(38,85%,60%)]">{stats.pending.count}</p>
-                  <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">⏳ قيد الانتظار</p>
-                  <div className="text-xs text-gray-500 mt-1.5 space-y-0.5">
-                    <div>👥 {stats.pending.students} طالب</div>
-                    <div>📦 {stats.pending.items} عنصر</div>
-                    <div>📊 {stats.pending.departments} قسم</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" 
-                onClick={() => handleStatsClick('inProgress', 'تفاصيل الطلبات قيد التنفيذ')}>
-            <CardContent className="p-5">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <div className="p-2.5 bg-gradient-to-br from-[hsl(142,50%,35%)] to-[hsl(142,60%,25%)] rounded-xl shadow-lg">
-                  <AlertTriangle className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-2xl font-bold text-[hsl(142,60%,25%)]">{stats.inProgress.count}</p>
-                  <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">🔄 قيد التنفيذ</p>
-                  <div className="text-xs text-gray-500 mt-1.5 space-y-0.5">
-                    <div>🔄 {stats.inProgress.inPreparation} قيد التحضير</div>
-                    <div>✅ {stats.inProgress.readyForPickup} جاهز</div>
-                    <div>👥 {stats.inProgress.students} طالب</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="cursor-pointer card-hover border-2 border-[hsl(142,50%,30%)] bg-gradient-to-br from-white to-[hsl(142,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(142,50%,25%)] transition-all duration-300" 
-                onClick={() => handleStatsClick('completed', 'تفاصيل الطلبات المكتملة')}>
-            <CardContent className="p-5">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <div className="p-2.5 bg-gradient-to-br from-[hsl(142,50%,35%)] to-[hsl(142,60%,25%)] rounded-xl shadow-lg">
-                  <CheckCircle className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-2xl font-bold text-[hsl(142,60%,25%)]">{stats.completed.count}</p>
-                  <p className="text-sm font-semibold text-[hsl(142,60%,20%)]">✅ مكتمل</p>
-                  <div className="text-xs text-gray-500 mt-1.5 space-y-0.5">
-                    <div>👥 {stats.completed.students} طالب</div>
-                    <div>📦 {stats.completed.items} عنصر</div>
-                    <div>📈 {stats.completed.avgStudentsPerRequest} متوسط/طلب</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="cursor-pointer card-hover border-2 border-[hsl(38,70%,50%)] bg-gradient-to-br from-white to-[hsl(38,30%,96%)] shadow-md hover:shadow-xl hover:border-[hsl(38,85%,60%)] transition-all duration-300" 
-                onClick={() => handleStatsClick('highPriority', 'تفاصيل الطلبات عالية الأولوية')}>
-            <CardContent className="p-5">
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <div className="p-2.5 bg-gradient-to-br from-[hsl(38,85%,60%)] to-[hsl(38,90%,50%)] rounded-xl shadow-lg">
-                  <AlertTriangle className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-2xl font-bold text-[hsl(38,85%,60%)]">{stats.highPriority.count}</p>
-                  <p className="text-sm font-semibold text-[hsl(38,80%,50%)]">🔴 أولوية عالية</p>
-                  <div className="text-xs text-gray-500 mt-1.5 space-y-0.5">
-                    <div>🚨 {stats.highPriority.urgentRequests} عاجل</div>
-                    <div>👥 {stats.highPriority.students} طالب</div>
-                    <div>📦 {stats.highPriority.items} عنصر</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <h3 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
+          <BarChart3 className="size-5" />
+          متابعة الطلبات النشطة
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard
+            label="مسودة"
+            value={stats.draft.count}
+            icon={FileText}
+            tone="default"
+            hint={`${stats.draft.students} طالب · ${stats.draft.items} عنصر`}
+            onClick={() => handleStatsClick('draft', 'تفاصيل المسودات')}
+          />
+          <StatCard
+            label="قيد الانتظار"
+            value={stats.pending.count}
+            icon={Clock}
+            tone="warning"
+            hint={`${stats.pending.students} طالب · ${stats.pending.items} عنصر`}
+            onClick={() => handleStatsClick('pending', 'تفاصيل الطلبات قيد الانتظار')}
+          />
+          <StatCard
+            label="قيد التنفيذ"
+            value={stats.inProgress.count}
+            icon={RefreshCw}
+            tone="primary"
+            hint={`${stats.inProgress.inPreparation} قيد التحضير · ${stats.inProgress.readyForPickup} جاهز`}
+            onClick={() => handleStatsClick('inProgress', 'تفاصيل الطلبات قيد التنفيذ')}
+          />
+          <StatCard
+            label="مكتمل"
+            value={stats.completed.count}
+            icon={CheckCircle}
+            tone="success"
+            hint={`${stats.completed.students} طالب · ${stats.completed.items} عنصر`}
+            onClick={() => handleStatsClick('completed', 'تفاصيل الطلبات المكتملة')}
+          />
+          <StatCard
+            label="أولوية عالية"
+            value={stats.highPriority.count}
+            icon={Flame}
+            tone="danger"
+            hint={`${stats.highPriority.urgentRequests} عاجل · ${stats.highPriority.students} طالب`}
+            onClick={() => handleStatsClick('highPriority', 'تفاصيل الطلبات عالية الأولوية')}
+          />
         </div>
       </div>
     </div>

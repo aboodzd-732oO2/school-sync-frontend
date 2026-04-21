@@ -25,17 +25,22 @@ function formatDayLabel(iso: string) {
   return `${day}/${month}`;
 }
 
-export function RequestsTrendChart() {
+interface Props {
+  fetchTrends?: (days: number) => Promise<AdminStatsTrendPoint[]>;
+}
+
+export function RequestsTrendChart({ fetchTrends }: Props = {}) {
   const [days, setDays] = useState<number>(30);
   const [data, setData] = useState<AdminStatsTrendPoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const fetcher = fetchTrends ?? adminApi.statsTrends;
 
   useEffect(() => {
     let cancelled = false;
     setData(null);
     setError(null);
-    adminApi
-      .statsTrends(days)
+    fetcher(days)
       .then((res) => {
         if (!cancelled) setData(res);
       })
@@ -45,7 +50,7 @@ export function RequestsTrendChart() {
     return () => {
       cancelled = true;
     };
-  }, [days]);
+  }, [days, fetcher]);
 
   const hasActivity = useMemo(
     () => (data ?? []).some((d) => d.submitted > 0 || d.completed > 0),

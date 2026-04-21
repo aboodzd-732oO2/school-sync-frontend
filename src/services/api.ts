@@ -56,12 +56,17 @@ export const requests = {
 };
 
 // ──────────── Warehouse ────────────
+import type { WarehouseStatsResponse, WarehouseStatsTrendPoint } from '@/types/warehouseStats';
+
 export const warehouse = {
   listRequests: (filters?: Record<string, string>) => {
     const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
     return request(`/warehouse/requests${params}`);
   },
   updateRequestStatus: (id: string, body: any) => request(`/warehouse/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
+  stats: (): Promise<WarehouseStatsResponse> => request('/warehouse/stats'),
+  statsTrends: (days = 30): Promise<WarehouseStatsTrendPoint[]> =>
+    request(`/warehouse/stats/trends?days=${days}`),
 };
 
 // ──────────── Inventory ────────────

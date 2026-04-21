@@ -64,7 +64,8 @@ export const warehouse = {
     return request(`/warehouse/requests${params}`);
   },
   updateRequestStatus: (id: string, body: any) => request(`/warehouse/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
-  stats: (): Promise<WarehouseStatsResponse> => request('/warehouse/stats'),
+  stats: (days?: number): Promise<WarehouseStatsResponse> =>
+    request(`/warehouse/stats${days && days > 0 ? `?days=${days}` : ''}`),
   statsTrends: (days = 30): Promise<WarehouseStatsTrendPoint[]> =>
     request(`/warehouse/stats/trends?days=${days}`),
 };

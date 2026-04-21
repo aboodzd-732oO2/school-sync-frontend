@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import {
   ClipboardList, Package, Clock, RefreshCw, CheckCircle, Undo2, X,
   Flame, School, GraduationCap, AlertTriangle, AlertCircle,
-  Users as UsersRound, Layers, TrendingDown, PackageX,
+  Users as UsersRound, Layers, TrendingDown, PackageX, CalendarRange,
 } from "lucide-react";
 import { StatCard } from "@/components/common/StatCard";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 import { EmptyState } from "@/components/common/EmptyState";
+import { Button } from "@/components/ui/button";
 import { WarehouseHeader } from "@/components/warehouse/WarehouseHeader";
 import { CriticalStockCard } from "@/components/warehouse/CriticalStockCard";
 import StatsDetailsModal from "@/components/StatsDetailsModal";
@@ -60,6 +61,14 @@ type ModalType =
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
+const RANGE_OPTIONS = [
+  { days: 0, label: "كل الوقت" },
+  { days: 7, label: "7 أيام" },
+  { days: 30, label: "30 يوم" },
+  { days: 90, label: "90 يوم" },
+  { days: 365, label: "سنة" },
+] as const;
+
 const WarehouseDashboardPage = ({ requests, user }: Props) => {
   const {
     warehouseDepartmentDisplay,
@@ -69,14 +78,16 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
     getInstitutionsData,
   } = useWarehouseRequests(requests, user);
 
+  const [days, setDays] = useState<number>(0);
   const [backendStats, setBackendStats] = useState<WarehouseStatsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
+    setBackendStats(null);
     warehouseApi
-      .stats()
+      .stats(days)
       .then((data) => {
         if (!cancelled) setBackendStats(data);
       })
@@ -86,7 +97,7 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [days]);
 
   const [statsModal, setStatsModal] = useState<{
     isOpen: boolean;
@@ -129,12 +140,54 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
 
   const b = backendStats;
 
+  // Prefer backend values (respect date range filter); fall back to local when not yet loaded
+  const v = {
+    total: b?.requests.total ?? localStats.total,
+    pending: b?.requests.byStatus.pending ?? localStats.pending,
+    inProgress: b?.requests.byStatus.in_progress ?? localStats.inProgress,
+    completed: b?.requests.byStatus.completed ?? localStats.completed,
+    readyForPickup: b?.requests.byStatus.ready_for_pickup ?? localStats.readyForPickup,
+    undelivered: b?.requests.byStatus.undelivered ?? localStats.undelivered,
+    rejected: b?.requests.byStatus.rejected ?? localStats.rejected,
+    cancelled: b?.requests.byStatus.cancelled ?? localStats.cancelled,
+    draft: b?.requests.byStatus.draft ?? 0,
+    totalQuantity: b?.requests.totalQuantity ?? localStats.totalQuantity,
+    highPriority: b?.requests.highPriorityCount ?? localStats.highPriority,
+    schools: b?.requests.schoolCount ?? localStats.schools,
+    universities: b?.requests.universityCount ?? localStats.universities,
+  };
+
+  const rangeSelector = (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-card/50 p-3">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <CalendarRange className="size-4" />
+        <span>النطاق الزمني:</span>
+      </div>
+      <div className="flex flex-wrap gap-1 rounded-md border border-border/60 p-0.5">
+        {RANGE_OPTIONS.map((opt) => (
+          <Button
+            key={opt.days}
+            type="button"
+            size="sm"
+            variant={days === opt.days ? "default" : "ghost"}
+            className="h-7 px-3 text-xs"
+            onClick={() => setDays(opt.days)}
+          >
+            {opt.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <WarehouseHeader
         warehouseName={user.warehouseName}
         departmentDisplay={warehouseDepartmentDisplay}
       />
+
+      {rangeSelector}
 
       {error && (
         <EmptyState
@@ -152,7 +205,7 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="طلبات قيد الانتظار"
-            value={fmt(localStats.pending)}
+            value={fmt(v.pending)}
             icon={Clock}
             tone="warning"
             hint="تحتاج بدء تنفيذ"
@@ -160,14 +213,14 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
           />
           <StatCard
             label="جاهز للاستلام"
-            value={fmt(localStats.readyForPickup)}
+            value={fmt(v.readyForPickup)}
             icon={Package}
             tone="tertiary"
             hint="تنتظر المؤسسة لاستلامها"
           />
           <StatCard
             label="طلبات عالية الأولوية"
-            value={fmt(localStats.highPriority)}
+            value={fmt(v.highPriority)}
             icon={Flame}
             tone="danger"
             onClick={() => openModal("highPriority", "الطلبات عالية الأولوية")}
@@ -190,7 +243,7 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="إجمالي الطلبات"
-            value={fmt(localStats.total)}
+            value={fmt(v.total)}
             icon={ClipboardList}
             tone="primary"
             onClick={() => openModal("total", "إجمالي الطلبات")}
@@ -212,7 +265,7 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
           />
           <StatCard
             label="إجمالي العناصر المخرجة"
-            value={fmt(localStats.totalQuantity)}
+            value={fmt(v.totalQuantity)}
             icon={Package}
             tone="warning"
             hint="انقر للتفاصيل"
@@ -229,41 +282,41 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <StatCard
             label="قيد التنفيذ"
-            value={fmt(localStats.inProgress)}
+            value={fmt(v.inProgress)}
             icon={RefreshCw}
             tone="info"
             onClick={() => openModal("inProgress", "الطلبات قيد التنفيذ")}
           />
           <StatCard
             label="مكتمل"
-            value={fmt(localStats.completed)}
+            value={fmt(v.completed)}
             icon={CheckCircle}
             tone="success"
             onClick={() => openModal("completed", "الطلبات المكتملة")}
           />
           <StatCard
             label="غير مستلم"
-            value={fmt(localStats.undelivered)}
+            value={fmt(v.undelivered)}
             icon={Undo2}
             tone="warning"
             onClick={() => openModal("undelivered", "الطلبات غير المستلمة")}
           />
           <StatCard
             label="مرفوض"
-            value={fmt(localStats.rejected)}
+            value={fmt(v.rejected)}
             icon={X}
             tone="danger"
             onClick={() => openModal("rejected", "الطلبات المرفوضة")}
           />
           <StatCard
             label="ملغى"
-            value={fmt(localStats.cancelled)}
+            value={fmt(v.cancelled)}
             icon={X}
             tone="default"
           />
           <StatCard
             label="مسودات"
-            value={fmt(b?.requests.byStatus.draft ?? 0)}
+            value={fmt(v.draft)}
             icon={Layers}
             tone="default"
           />
@@ -336,7 +389,7 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <StatCard
             label="طلبات من المدارس"
-            value={fmt(localStats.schools)}
+            value={fmt(v.schools)}
             icon={School}
             tone="success"
             hint="انقر لرؤية تفاصيل المدارس"
@@ -346,7 +399,7 @@ const WarehouseDashboardPage = ({ requests, user }: Props) => {
           />
           <StatCard
             label="طلبات من الجامعات"
-            value={fmt(localStats.universities)}
+            value={fmt(v.universities)}
             icon={GraduationCap}
             tone="info"
             hint="انقر لرؤية تفاصيل الجامعات"

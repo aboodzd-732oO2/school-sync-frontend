@@ -29,6 +29,9 @@ export interface WarehouseStatsResponse {
     totalQuantity: number;
     pendingCount: number;
     readyForPickupCount: number;
+    highPriorityCount: number;
+    schoolCount: number;
+    universityCount: number;
   };
   inventory: {
     totalItems: number;

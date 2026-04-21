@@ -65,7 +65,9 @@ interface Props {
   onUpdateRequest?: (updatedRequest: Request) => void;
 }
 
-const WarehouseRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest }: Props) => {
+const ACTIVE_STATUSES = ["pending", "in-progress", "ready-for-pickup", "undelivered"];
+
+const WarehouseActiveRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest }: Props) => {
   const { toast } = useToast();
   const { warehouseDepartmentDisplay, warehouseRequests } = useWarehouseRequests(requests, user);
   const { getLabel: getPriorityLabel, getColor: getPriorityHexColor } = usePriorities();
@@ -78,8 +80,9 @@ const WarehouseRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
-  // Apply search + priority filters
-  let filteredRequests = warehouseRequests.filter((r) =>
+  const activeRequests = warehouseRequests.filter((r) => ACTIVE_STATUSES.includes(r.status));
+
+  let filteredRequests = activeRequests.filter((r) =>
     r.title.toLowerCase().includes(searchTerm.toLowerCase()),
   );
   if (priorityFilter !== "all") {
@@ -197,16 +200,18 @@ const WarehouseRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest
       <WarehouseHeader
         warehouseName={user.warehouseName}
         departmentDisplay={warehouseDepartmentDisplay}
-        subtitle="قائمة الطلبات الواردة للمستودع"
+        subtitle="الطلبات التي تتطلب عملاً من المستودع"
       />
 
       <Card>
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <ClipboardList className="size-5 text-primary" />
-            <span>طلبات قسم {warehouseDepartmentDisplay}</span>
+            <span>الطلبات النشطة — قسم {warehouseDepartmentDisplay}</span>
           </CardTitle>
-          <CardDescription>الطلبات الواردة من المؤسسات التعليمية في المحافظة</CardDescription>
+          <CardDescription>
+            قيد الانتظار، قيد التنفيذ، جاهز للاستلام، غير مستلم
+          </CardDescription>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
@@ -283,13 +288,13 @@ const WarehouseRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest
             </div>
           )}
 
-          {warehouseRequests.length === 0 && (
+          {activeRequests.length === 0 && (
             <div className="mt-4 flex items-start gap-2 rounded-lg border border-info/30 bg-info/10 p-3">
               <Info className="size-5 shrink-0 text-info mt-0.5" />
               <p className="text-sm text-info">
-                <strong>ملاحظة:</strong> لا توجد طلبات متخصصة لقسم "{warehouseDepartmentDisplay}" حالياً.
+                <strong>ملاحظة:</strong> لا توجد طلبات نشطة لقسم "{warehouseDepartmentDisplay}" حالياً.
                 <br />
-                الطلبات تظهر هنا فقط بعد إرسالها من المؤسسات التعليمية (ليس المسودات).
+                تحقق من <strong>سجل الطلبات</strong> لمراجعة الطلبات المغلقة.
               </p>
             </div>
           )}
@@ -306,8 +311,8 @@ const WarehouseRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest
             ) : (
               <EmptyState
                 icon={Package}
-                title={`لا توجد طلبات متخصصة لقسم "${warehouseDepartmentDisplay}" بعد`}
-                description="ستظهر هنا الطلبات المتخصصة عند إرسالها من المؤسسات التعليمية"
+                title="لا توجد طلبات نشطة"
+                description="كل الطلبات النشطة منجزة حالياً. راجع سجل الطلبات للمغلقة."
               />
             )
           ) : (
@@ -541,4 +546,4 @@ const WarehouseRequestsPage = ({ requests, user, onUpdateStatus, onUpdateRequest
   );
 };
 
-export default WarehouseRequestsPage;
+export default WarehouseActiveRequestsPage;

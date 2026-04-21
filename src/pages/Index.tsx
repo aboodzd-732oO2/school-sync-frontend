@@ -8,7 +8,8 @@ import { AppShell } from "@/components/layout/AppShell";
 
 // Warehouse pages
 import WarehouseDashboardPage from "./warehouse/Dashboard";
-import WarehouseRequestsPage from "./warehouse/Requests";
+import WarehouseActiveRequestsPage from "./warehouse/ActiveRequests";
+import WarehouseRequestsHistoryPage from "./warehouse/RequestsHistory";
 import WarehouseInventoryPage from "./warehouse/Inventory";
 import { auth, requests as requestsApi, warehouse as warehouseApi, removeToken } from "@/services/api";
 import { connectSocket, disconnectSocket } from "@/services/socket";
@@ -267,14 +268,20 @@ const Index = () => {
     content = <WarehouseInventoryPage user={user} />;
   } else if (path === '/requests') {
     if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/requests/active" replace />;
+  } else if (path === '/requests/active') {
+    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
     content = (
-      <WarehouseRequestsPage
+      <WarehouseActiveRequestsPage
         requests={requests}
         user={user}
         onUpdateStatus={handleUpdateStatus}
         onUpdateRequest={handleUpdateRequest}
       />
     );
+  } else if (path === '/requests/history') {
+    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
+    content = <WarehouseRequestsHistoryPage requests={requests} user={user} />;
   } else if (path === '/dashboard' || path === '/') {
     if (user.userType === 'warehouse') {
       content = <WarehouseDashboardPage requests={requests} user={user} />;

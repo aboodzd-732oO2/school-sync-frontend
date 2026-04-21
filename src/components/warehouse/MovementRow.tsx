@@ -79,9 +79,9 @@ export function MovementRow({ movement, showItemName = true }: Props) {
           <span className="tabular-nums">
             الكمية:{" "}
             <span dir="ltr" className="inline-flex items-baseline gap-1 align-baseline">
-              <span className="font-medium text-foreground">{movement.quantityBefore}</span>
-              <span aria-hidden>→</span>
               <span className="font-medium text-foreground">{movement.quantityAfter}</span>
+              <span aria-hidden>←</span>
+              <span className="font-medium text-foreground">{movement.quantityBefore}</span>
             </span>
             {!deltaZero && (
               <span

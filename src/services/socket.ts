@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'https://school-sync-backend-production.up.railway.app/api/v1';
 // نستنتج أصل السيرفر من VITE_API_URL
 const SOCKET_URL = API_URL.replace(/\/api\/v1\/?$/, '');
 

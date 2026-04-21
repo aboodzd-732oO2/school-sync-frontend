@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'https://school-sync-backend-production.up.railway.app/api/v1';
 
 function getToken(): string | null {
   return localStorage.getItem('token');

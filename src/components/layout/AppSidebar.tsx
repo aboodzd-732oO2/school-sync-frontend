@@ -82,6 +82,7 @@ const warehouseNav: NavGroup[] = [
     label: "المخزون",
     items: [
       { label: "إدارة المخزون", href: "/inventory", icon: Package },
+      { label: "سجل المخزون", href: "/inventory/history", icon: History },
     ],
   },
 ];

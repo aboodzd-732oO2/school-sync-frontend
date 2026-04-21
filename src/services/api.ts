@@ -71,6 +71,8 @@ export const warehouse = {
 };
 
 // ──────────── Inventory ────────────
+import type { InventoryMovement, PaginatedMovements } from '@/types/inventoryMovement';
+
 export const inventory = {
   list: (filters?: Record<string, string>) => {
     const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
@@ -80,6 +82,12 @@ export const inventory = {
   update: (id: number, body: any) => request(`/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   remove: (id: number) => request(`/inventory/${id}`, { method: 'DELETE' }),
   lowStock: () => request('/inventory/low-stock'),
+  movements: (filters?: Record<string, string>): Promise<PaginatedMovements> => {
+    const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
+    return request(`/inventory/movements${params}`);
+  },
+  itemHistory: (itemId: number): Promise<InventoryMovement[]> =>
+    request(`/inventory/${itemId}/history`),
 };
 
 // ──────────── Notifications ────────────

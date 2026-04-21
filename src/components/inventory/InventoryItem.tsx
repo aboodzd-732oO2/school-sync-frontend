@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Save, X, PlusCircle, Settings, AlertTriangle, Trash2, CheckCircle } from "lucide-react";
+import { Save, X, PlusCircle, Settings, AlertTriangle, Trash2, CheckCircle, History } from "lucide-react";
+import { ItemHistoryDialog } from "@/components/warehouse/ItemHistoryDialog";
 
 interface InventoryItemType {
   id: string;
@@ -31,6 +32,7 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
   const [addingQuantity, setAddingQuantity] = useState(false);
   const [quantityValue, setQuantityValue] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleSaveItemEdit = () => {
     onUpdateItem(item.id, editQuantity, editThreshold);
@@ -223,8 +225,18 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
                 <Settings className="h-4 w-4 ms-1" />
                 تعديل
               </Button>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setHistoryOpen(true)}
+                className="border-info/30 bg-muted/40 text-info hover:bg-info/10 hover:border-info hover:text-info shadow-sm hover:shadow-md transition-[background-color,border-color,box-shadow,color] font-medium"
+                title="سجل حركات هذا العنصر"
+              >
+                <History className="h-4 w-4 ms-1" />
+                السجل
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={handleDeleteClick}
                 className="border-danger/40 bg-danger/10 text-danger hover:bg-danger/15 hover:border-red-400 hover:text-danger shadow-sm hover:shadow-md transition-[background-color,border-color,box-shadow,color] font-medium"
@@ -236,6 +248,13 @@ const InventoryItem = ({ item, onSaveThreshold, onAddQuantity, onUpdateItem, onD
           )}
         </div>
       </div>
+
+      <ItemHistoryDialog
+        itemId={historyOpen ? Number(item.id) : null}
+        itemName={item.name}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </div>
   );
 };

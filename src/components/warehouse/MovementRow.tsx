@@ -78,15 +78,14 @@ export function MovementRow({ movement, showItemName = true }: Props) {
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="tabular-nums">
             الكمية:{" "}
-            <span className="font-medium text-foreground">
-              {movement.quantityBefore}
-            </span>{" "}
-            →{" "}
-            <span className="font-medium text-foreground">
-              {movement.quantityAfter}
+            <span dir="ltr" className="inline-flex items-baseline gap-1 align-baseline">
+              <span className="font-medium text-foreground">{movement.quantityBefore}</span>
+              <span aria-hidden>→</span>
+              <span className="font-medium text-foreground">{movement.quantityAfter}</span>
             </span>
             {!deltaZero && (
               <span
+                dir="ltr"
                 className={cn(
                   "ms-1 font-semibold",
                   deltaPositive ? "text-success" : "text-danger",

@@ -41,7 +41,8 @@ test.describe('Warehouse workflows', () => {
     await login(page, WH_EMAIL, PASS);
   });
 
-  test('WarehouseDashboard يُرندر ويعرض الطلب', async ({ page }) => {
+  test('Requests page يُرندر ويعرض الطلب', async ({ page }) => {
+    await page.goto('/requests');
     await expect(page.locator('body')).toContainText(/E2E طلب للمستودع/i, { timeout: 15000 });
   });
 
@@ -51,30 +52,27 @@ test.describe('Warehouse workflows', () => {
 
   test('screenshot: warehouse dashboard', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.locator('body')).toContainText(/E2E طلب للمستودع/i, { timeout: 15000 });
+    await expect(page.locator('body')).toContainText(/إجمالي الطلبات/i, { timeout: 15000 });
     await page.waitForTimeout(500);
     await page.screenshot({
       path: 'test-results/screenshots/warehouse-dashboard.png',
     });
   });
 
-  test('screenshot: warehouse request card detail', async ({ page }) => {
+  test('screenshot: warehouse requests list', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto('/requests');
     await expect(page.locator('body')).toContainText(/E2E طلب للمستودع/i, { timeout: 15000 });
     await page.waitForTimeout(500);
-    // Scroll to requests list
-    await page.evaluate(() => window.scrollTo(0, 600));
-    await page.waitForTimeout(300);
     await page.screenshot({
-      path: 'test-results/screenshots/warehouse-request-card.png',
+      path: 'test-results/screenshots/warehouse-requests.png',
     });
   });
 
-  test('screenshot: warehouse inventory tab', async ({ page }) => {
+  test('screenshot: warehouse inventory page', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.locator('body')).toContainText(/E2E طلب للمستودع/i, { timeout: 15000 });
-    await page.getByRole('tab', { name: /إدارة المخزون/ }).click();
-    await page.waitForTimeout(500);
+    await page.goto('/inventory');
+    await page.waitForTimeout(800);
     await page.screenshot({
       path: 'test-results/screenshots/warehouse-inventory.png',
     });

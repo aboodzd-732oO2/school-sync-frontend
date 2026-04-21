@@ -3,7 +3,6 @@ import RequestDetailsModal from "./RequestDetailsModal";
 import EditRequestModal from "./EditRequestModal";
 import StatsDetailsModal from "./StatsDetailsModal";
 import RejectRequestDialog from "./RejectRequestDialog";
-import WarehouseDashboard from "./WarehouseDashboard";
 import MainStats from "./dashboard/MainStats";
 import StatusStats from "./dashboard/StatusStats";
 import ClosedRequestsStats from "./dashboard/ClosedRequestsStats";
@@ -13,18 +12,6 @@ import { DashboardProps } from "@/types/dashboard";
 import { useDashboardHandlers } from "@/hooks/useDashboardHandlers";
 
 const Dashboard = ({ requests, onUpdateStatus, onDeleteRequest, onUpdateRequest, user }: DashboardProps) => {
-  // If user is warehouse, use the specialized warehouse dashboard
-  if (user?.userType === 'warehouse') {
-    return (
-      <WarehouseDashboard 
-        requests={requests}
-        onUpdateStatus={onUpdateStatus}
-        onUpdateRequest={onUpdateRequest}
-        user={user as any}
-      />
-    );
-  }
-
   const {
     selectedRequest,
     isModalOpen,

@@ -4,8 +4,12 @@ import Dashboard from "@/components/Dashboard";
 import RequestForm from "@/components/RequestForm";
 import Reports from "@/components/Reports";
 import LoginForm from "@/components/LoginForm";
-import InventoryManagement from "@/components/InventoryManagement";
 import { AppShell } from "@/components/layout/AppShell";
+
+// Warehouse pages
+import WarehouseDashboardPage from "./warehouse/Dashboard";
+import WarehouseRequestsPage from "./warehouse/Requests";
+import WarehouseInventoryPage from "./warehouse/Inventory";
 import { auth, requests as requestsApi, warehouse as warehouseApi, removeToken } from "@/services/api";
 import { connectSocket, disconnectSocket } from "@/services/socket";
 import { useRequestsRealtime } from "@/hooks/useRequestsRealtime";
@@ -260,17 +264,31 @@ const Index = () => {
     content = <Reports requests={requests} />;
   } else if (path === '/inventory') {
     if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
-    content = <InventoryManagement warehouseName={user.warehouseName} department="" />;
-  } else if (path === '/dashboard' || path === '/') {
+    content = <WarehouseInventoryPage user={user} />;
+  } else if (path === '/requests') {
+    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
     content = (
-      <Dashboard
+      <WarehouseRequestsPage
         requests={requests}
-        onUpdateStatus={handleUpdateStatus}
-        onDeleteRequest={handleDeleteRequest}
-        onUpdateRequest={handleUpdateRequest}
         user={user}
+        onUpdateStatus={handleUpdateStatus}
+        onUpdateRequest={handleUpdateRequest}
       />
     );
+  } else if (path === '/dashboard' || path === '/') {
+    if (user.userType === 'warehouse') {
+      content = <WarehouseDashboardPage requests={requests} user={user} />;
+    } else {
+      content = (
+        <Dashboard
+          requests={requests}
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteRequest={handleDeleteRequest}
+          onUpdateRequest={handleUpdateRequest}
+          user={user}
+        />
+      );
+    }
   } else {
     return <Navigate to="/dashboard" replace />;
   }

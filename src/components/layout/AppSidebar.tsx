@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3, Users, Building2, Warehouse, FolderTree, Package,
   MapPin, School, Ruler, Flag, Map, Lock, ScrollText,
-  Plus, FileText, GraduationCap,
+  Plus, FileText, GraduationCap, LayoutDashboard, ClipboardList,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -70,10 +70,16 @@ const institutionNav: NavGroup[] = [
 
 const warehouseNav: NavGroup[] = [
   {
-    label: "الرئيسية",
+    label: "الطلبات",
     items: [
-      { label: "الطلبات", href: "/dashboard", icon: FileText },
-      { label: "المخزون", href: "/inventory", icon: Package },
+      { label: "لوحة التحكم", href: "/dashboard", icon: LayoutDashboard },
+      { label: "قائمة الطلبات", href: "/requests", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "المخزون",
+    items: [
+      { label: "إدارة المخزون", href: "/inventory", icon: Package },
     ],
   },
 ];

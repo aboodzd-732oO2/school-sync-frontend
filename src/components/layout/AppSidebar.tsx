@@ -6,9 +6,10 @@ import {
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
+  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuBadge, SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { SidebarBadges } from "./AppShell";
 
 type UserType = "admin" | "institution" | "warehouse";
 
@@ -85,7 +86,7 @@ const warehouseNav: NavGroup[] = [
   },
 ];
 
-export function AppSidebar({ userType }: { userType: UserType }) {
+export function AppSidebar({ userType, badges }: { userType: UserType; badges?: SidebarBadges }) {
   const location = useLocation();
   const nav =
     userType === "admin" ? adminNav :
@@ -93,6 +94,13 @@ export function AppSidebar({ userType }: { userType: UserType }) {
 
   const isActive = (href: string) =>
     location.pathname === href || location.pathname.startsWith(href + "/");
+
+  const getBadge = (href: string): number | undefined => {
+    if (href === "/requests/active" && badges?.warehouseActive && badges.warehouseActive > 0) {
+      return badges.warehouseActive;
+    }
+    return undefined;
+  };
 
   return (
     <Sidebar side="right" collapsible="icon">
@@ -119,6 +127,7 @@ export function AppSidebar({ userType }: { userType: UserType }) {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon;
+                  const badge = getBadge(item.href);
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
@@ -127,6 +136,11 @@ export function AppSidebar({ userType }: { userType: UserType }) {
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
+                      {badge !== undefined && (
+                        <SidebarMenuBadge className="bg-danger text-danger-foreground animate-in fade-in">
+                          {badge > 99 ? "99+" : badge}
+                        </SidebarMenuBadge>
+                      )}
                     </SidebarMenuItem>
                   );
                 })}

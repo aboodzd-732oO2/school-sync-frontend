@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import Dashboard from "@/components/Dashboard";
 import RequestForm from "@/components/RequestForm";
@@ -78,9 +78,13 @@ type UserData = {
 } | {
   userType: 'warehouse';
   warehouseName: string;
+  departmentKey?: string;
   institutionType?: never;
   institutionName?: never;
 });
+
+const ACTIVE_STATUSES = ['pending', 'in-progress', 'ready-for-pickup', 'undelivered'];
+const WAREHOUSE_ACTIVE_LASTVISIT_KEY = 'warehouse_active_lastvisit_ms';
 
 const Index = () => {
   const location = useLocation();
@@ -88,6 +92,9 @@ const Index = () => {
   const [requests, setRequests] = useState<Request[]>([]);
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [warehouseActiveLastVisit, setWarehouseActiveLastVisit] = useState<number>(() =>
+    Number(localStorage.getItem(WAREHOUSE_ACTIVE_LASTVISIT_KEY) || '0'),
+  );
 
   const loadRequests = useCallback(async () => {
     if (!user || user.userType === 'admin') return;
@@ -134,6 +141,26 @@ const Index = () => {
     setRequests([]);
     navigate('/');
   };
+
+  // Mark "/requests/active" as visited when warehouse user lands there
+  useEffect(() => {
+    if (user?.userType === 'warehouse' && location.pathname === '/requests/active') {
+      const now = Date.now();
+      localStorage.setItem(WAREHOUSE_ACTIVE_LASTVISIT_KEY, String(now));
+      setWarehouseActiveLastVisit(now);
+    }
+  }, [location.pathname, user]);
+
+  // Badge count: warehouse active requests submitted AFTER last visit
+  const warehouseActiveBadge = useMemo(() => {
+    if (user?.userType !== 'warehouse') return 0;
+    const deptKey = user.departmentKey || 'materials';
+    return requests.filter(r =>
+      r.department === deptKey &&
+      ACTIVE_STATUSES.includes(r.status) &&
+      new Date(r.dateSubmitted).getTime() > warehouseActiveLastVisit,
+    ).length;
+  }, [user, requests, warehouseActiveLastVisit]);
 
   useRequestsRealtime({
     onNew: useCallback((r: Request) => {
@@ -248,7 +275,7 @@ const Index = () => {
     else return <Navigate to="/admin/stats" replace />;
 
     return (
-      <AppShell user={user} onLogout={handleLogout}>
+      <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge }}>
         {content}
       </AppShell>
     );
@@ -301,7 +328,7 @@ const Index = () => {
   }
 
   return (
-    <AppShell user={user} onLogout={handleLogout}>
+    <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge }}>
       {content}
     </AppShell>
   );

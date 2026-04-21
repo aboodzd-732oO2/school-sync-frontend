@@ -11,13 +11,18 @@ interface AppShellUser {
   warehouseName?: string;
 }
 
+export interface SidebarBadges {
+  warehouseActive?: number;
+}
+
 interface Props {
   user: AppShellUser;
   onLogout: () => void;
+  badges?: SidebarBadges;
   children: React.ReactNode;
 }
 
-export function AppShell({ user, onLogout, children }: Props) {
+export function AppShell({ user, onLogout, badges, children }: Props) {
   const display =
     user.userType === "admin" ? "مدير النظام" :
     user.userType === "institution" ? user.institutionName :
@@ -29,7 +34,7 @@ export function AppShell({ user, onLogout, children }: Props) {
 
   return (
     <SidebarProvider>
-      <AppSidebar userType={user.userType} />
+      <AppSidebar userType={user.userType} badges={badges} />
       <SidebarInset>
         <AppHeader
           userEmail={user.email}

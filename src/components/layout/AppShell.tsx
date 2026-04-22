@@ -14,6 +14,7 @@ interface AppShellUser {
 export interface SidebarBadges {
   warehouseActive?: number;
   institutionActive?: number;
+  institutionDrafts?: number;
 }
 
 interface Props {

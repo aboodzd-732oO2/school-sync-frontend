@@ -9,6 +9,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import InstitutionDashboardPage from "./institution/Dashboard";
 import InstitutionActiveRequestsPage from "./institution/ActiveRequests";
 import InstitutionRequestsHistoryPage from "./institution/RequestsHistory";
+import InstitutionDraftsPage from "./institution/Drafts";
 
 // Warehouse pages
 import WarehouseDashboardPage from "./warehouse/Dashboard";
@@ -191,6 +192,12 @@ const Index = () => {
     }).length;
   }, [user, requests, institutionActiveLastVisit]);
 
+  // Badge count: number of drafts (informational, warning tone)
+  const institutionDraftsBadge = useMemo(() => {
+    if (user?.userType !== 'institution') return 0;
+    return requests.filter(r => r.status === 'draft').length;
+  }, [user, requests]);
+
   useRequestsRealtime({
     onNew: useCallback((r: Request) => {
       setRequests(prev => prev.some(p => p.id === r.id) ? prev : [r, ...prev]);
@@ -304,7 +311,7 @@ const Index = () => {
     else return <Navigate to="/admin/stats" replace />;
 
     return (
-      <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge, institutionActive: institutionActiveBadge }}>
+      <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge, institutionActive: institutionActiveBadge, institutionDrafts: institutionDraftsBadge }}>
         {content}
       </AppShell>
     );
@@ -360,6 +367,17 @@ const Index = () => {
     } else {
       return <Navigate to="/dashboard" replace />;
     }
+  } else if (path === '/drafts') {
+    if (user.userType !== 'institution') return <Navigate to="/dashboard" replace />;
+    content = (
+      <InstitutionDraftsPage
+        requests={requests}
+        onUpdateStatus={handleUpdateStatus}
+        onDeleteRequest={handleDeleteRequest}
+        onUpdateRequest={handleUpdateRequest}
+        user={user}
+      />
+    );
   } else if (path === '/requests/history') {
     if (user.userType === 'warehouse') {
       content = <WarehouseRequestsHistoryPage requests={requests} user={user} />;
@@ -395,7 +413,7 @@ const Index = () => {
   }
 
   return (
-    <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge, institutionActive: institutionActiveBadge }}>
+    <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge, institutionActive: institutionActiveBadge, institutionDrafts: institutionDraftsBadge }}>
       {content}
     </AppShell>
   );

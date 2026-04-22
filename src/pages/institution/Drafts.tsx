@@ -2,14 +2,11 @@ import { useMemo } from "react";
 import RequestsList from "@/components/dashboard/RequestsList";
 import RequestDetailsModal from "@/components/RequestDetailsModal";
 import EditRequestModal from "@/components/EditRequestModal";
-import RejectRequestDialog from "@/components/RejectRequestDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useDashboardHandlers } from "@/hooks/useDashboardHandlers";
 import type { DashboardProps } from "@/types/dashboard";
 
-const ACTIVE_STATUSES = ["pending", "in-progress", "ready-for-pickup", "undelivered"];
-
-const InstitutionActiveRequestsPage = ({
+const InstitutionDraftsPage = ({
   requests,
   onUpdateStatus,
   onDeleteRequest,
@@ -23,9 +20,6 @@ const InstitutionActiveRequestsPage = ({
     editingRequest,
     isEditModalOpen,
     setIsEditModalOpen,
-    rejectingRequest,
-    isRejectDialogOpen,
-    setIsRejectDialogOpen,
     handleDelete,
     handleViewDetails,
     handleEditRequest,
@@ -34,23 +28,22 @@ const InstitutionActiveRequestsPage = ({
     handleStatusUpdate,
     handleReportUndelivered,
     handleCancelRequest,
-    handleConfirmCancel,
   } = useDashboardHandlers(requests, onUpdateStatus, onDeleteRequest, onUpdateRequest);
 
-  const activeRequests = useMemo(
-    () => requests.filter((r) => ACTIVE_STATUSES.includes(r.status)),
+  const drafts = useMemo(
+    () => requests.filter((r) => r.status === "draft"),
     [requests],
   );
 
   return (
     <div className="animate-fade-in">
       <PageHeader
-        title="الطلبات النشطة"
-        description="الطلبات التي تحتاج متابعة أو اتخاذ إجراء"
+        title="المسودات"
+        description="الطلبات التي لم تُرسل بعد — يمكن تعديلها أو إرسالها أو حذفها"
       />
 
       <RequestsList
-        requests={activeRequests}
+        requests={drafts}
         user={user}
         onViewDetails={handleViewDetails}
         onEditRequest={handleEditRequest}
@@ -73,16 +66,8 @@ const InstitutionActiveRequestsPage = ({
         onClose={() => setIsEditModalOpen(false)}
         onUpdate={handleUpdateRequest}
       />
-
-      <RejectRequestDialog
-        isOpen={isRejectDialogOpen}
-        onClose={() => setIsRejectDialogOpen(false)}
-        onReject={handleConfirmCancel}
-        requestTitle={rejectingRequest?.title || ""}
-        type="institution"
-      />
     </div>
   );
 };
 
-export default InstitutionActiveRequestsPage;
+export default InstitutionDraftsPage;

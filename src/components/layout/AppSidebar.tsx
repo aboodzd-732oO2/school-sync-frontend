@@ -3,7 +3,7 @@ import {
   BarChart3, Users, Building2, Warehouse, FolderTree, Package,
   MapPin, School, Ruler, Flag, Map, Lock, ScrollText,
   Plus, FileText, GraduationCap, LayoutDashboard, Activity, History,
-  Settings as SettingsIcon, Bell, AlertTriangle,
+  Settings as SettingsIcon, Bell, AlertTriangle, FileEdit,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -65,6 +65,7 @@ const institutionNav: NavGroup[] = [
     items: [
       { label: "لوحة التحكم", href: "/dashboard", icon: LayoutDashboard },
       { label: "الطلبات النشطة", href: "/requests/active", icon: Activity },
+      { label: "المسودات", href: "/drafts", icon: FileEdit },
       { label: "سجل الطلبات", href: "/requests/history", icon: History },
       { label: "طلب جديد", href: "/submit", icon: Plus },
     ],
@@ -112,7 +113,7 @@ export function AppSidebar({ userType, badges }: { userType: UserType; badges?: 
   const isActive = (href: string) =>
     location.pathname === href || location.pathname.startsWith(href + "/");
 
-  const getBadge = (href: string): number | undefined => {
+  const getBadge = (href: string): { count: number; tone: "danger" | "warning" } | undefined => {
     if (href === "/requests/active") {
       const count =
         userType === "warehouse"
@@ -120,7 +121,11 @@ export function AppSidebar({ userType, badges }: { userType: UserType; badges?: 
           : userType === "institution"
             ? badges?.institutionActive
             : undefined;
-      return count && count > 0 ? count : undefined;
+      return count && count > 0 ? { count, tone: "danger" } : undefined;
+    }
+    if (href === "/drafts" && userType === "institution") {
+      const count = badges?.institutionDrafts;
+      return count && count > 0 ? { count, tone: "warning" } : undefined;
     }
     return undefined;
   };
@@ -151,6 +156,9 @@ export function AppSidebar({ userType, badges }: { userType: UserType; badges?: 
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const badge = getBadge(item.href);
+                  const badgeClass = badge?.tone === "warning"
+                    ? "bg-warning text-warning-foreground"
+                    : "bg-danger text-danger-foreground";
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
@@ -159,9 +167,9 @@ export function AppSidebar({ userType, badges }: { userType: UserType; badges?: 
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
-                      {badge !== undefined && (
-                        <SidebarMenuBadge className="bg-danger text-danger-foreground animate-in fade-in">
-                          {badge > 99 ? "99+" : badge}
+                      {badge && (
+                        <SidebarMenuBadge className={`${badgeClass} animate-in fade-in`}>
+                          {badge.count > 99 ? "99+" : badge.count}
                         </SidebarMenuBadge>
                       )}
                     </SidebarMenuItem>

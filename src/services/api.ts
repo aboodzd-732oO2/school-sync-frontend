@@ -42,6 +42,16 @@ export const auth = {
     request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
 };
 
+// ──────────── Institution ────────────
+import type { InstitutionStatsResponse, InstitutionStatsTrendPoint } from '@/types/institutionStats';
+
+export const institution = {
+  stats: (days?: number): Promise<InstitutionStatsResponse> =>
+    request(`/institution/stats${days && days > 0 ? `?days=${days}` : ''}`),
+  statsTrends: (days = 30): Promise<InstitutionStatsTrendPoint[]> =>
+    request(`/institution/stats/trends?days=${days}`),
+};
+
 // ──────────── Requests ────────────
 export const requests = {
   list: (filters?: Record<string, string>) => {

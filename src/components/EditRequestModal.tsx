@@ -78,57 +78,44 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
 
   const subcategoryLabels: { [key: string]: string } = {};
   deptItemsData.forEach(i => { subcategoryLabels[i.key] = i.labelAr; });
-  subcategoryLabels['other'] = 'أخرى';
 
   // Parse existing subcategories from different possible formats
   const parseSubcategories = (request: Request): SubcategoryWithCustom[] => {
     const parsedItems: SubcategoryWithCustom[] = [];
-    
-    // First, try to use subcategoryQuantities if available (new format)
+
     if (request.subcategoryQuantities && Array.isArray(request.subcategoryQuantities)) {
-      return request.subcategoryQuantities.map(item => ({
-        key: item.subcategory,
-        quantity: item.quantity || 1,
-        customDetails: item.customDetails || ''
-      }));
+      return request.subcategoryQuantities
+        .filter(item => item.subcategory !== 'other')
+        .map(item => ({
+          key: item.subcategory,
+          quantity: item.quantity || 1,
+        }));
     }
-    
-    // If requestedItems are available, parse from them
+
     if (request.requestedItems && Array.isArray(request.requestedItems)) {
-      request.requestedItems.forEach(item => {
-        if (item.originalKey === 'other') {
-          parsedItems.push({
-            key: 'other',
-            quantity: item.quantity || 1,
-            customDetails: item.itemName
-          });
-        } else {
+      request.requestedItems
+        .filter(item => item.originalKey !== 'other')
+        .forEach(item => {
           parsedItems.push({
             key: item.originalKey,
             quantity: item.quantity || 1,
-            customDetails: ''
           });
-        }
-      });
+        });
       return parsedItems;
     }
-    
-    // Fallback: parse from subcategory string
+
     if (request.subcategory) {
       const items = request.subcategory.split(', ').filter(Boolean);
       items.forEach(item => {
-        const foundKey = Object.keys(subcategoryLabels).find(key => 
-          subcategoryLabels[key] === item || key === item
+        const foundKey = Object.keys(subcategoryLabels).find(key =>
+          subcategoryLabels[key] === item || key === item,
         );
-        
-        if (foundKey && foundKey !== 'other') {
+        if (foundKey) {
           parsedItems.push({ key: foundKey, quantity: 1 });
-        } else {
-          parsedItems.push({ key: 'other', quantity: 1, customDetails: item });
         }
       });
     }
-    
+
     return parsedItems;
   };
 
@@ -173,36 +160,28 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
     }
 
     // Convert subcategories back to string format for backward compatibility
-    const subcategoryString = formData.subcategory.map(item => {
-      if (item.key === 'other' && item.customDetails) {
-        return item.customDetails;
-      }
-      return subcategoryLabels[item.key] || item.key;
-    }).join(', ');
+    const subcategoryString = formData.subcategory
+      .map(item => subcategoryLabels[item.key] || item.key)
+      .join(', ');
 
     // Create updated requestedItems array
     const requestedItems = formData.subcategory.map(item => {
-      const itemName = item.key === 'other' && item.customDetails 
-        ? item.customDetails 
-        : subcategoryLabels[item.key] || item.key;
-      
+      const itemName = subcategoryLabels[item.key] || item.key;
       return {
         itemName,
         originalKey: item.key,
         quantity: item.quantity,
-        unitType: item.key === 'other' ? 'عنصر' : getUnitType(item.key),
-        displayText: `${itemName} (${item.quantity} ${item.key === 'other' ? 'عنصر' : getUnitType(item.key)})`
+        unitType: getUnitType(item.key),
+        displayText: `${itemName} (${item.quantity} ${getUnitType(item.key)})`
       };
     });
 
     // Create updated itemsBreakdown array
     const itemsBreakdown = formData.subcategory.map(item => ({
-      name: item.key === 'other' && item.customDetails 
-        ? item.customDetails 
-        : subcategoryLabels[item.key] || item.key,
+      name: subcategoryLabels[item.key] || item.key,
       key: item.key,
       quantity: item.quantity,
-      unit: item.key === 'other' ? 'عنصر' : getUnitType(item.key)
+      unit: getUnitType(item.key)
     }));
 
     // Create subcategoryQuantities array for new format
@@ -227,7 +206,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
       requestedItems,
       itemsBreakdown,
       subcategoryQuantities,
-      unitType: formData.subcategory.length > 1 ? 'متنوع' : (formData.subcategory[0]?.key === 'other' ? 'عنصر' : getUnitType(formData.subcategory[0]?.key))
+      unitType: formData.subcategory.length > 1 ? 'متنوع' : getUnitType(formData.subcategory[0]?.key)
     };
 
 
@@ -278,7 +257,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
         // Add the subcategory
         return {
           ...prev,
-          subcategory: [...prev.subcategory, { key: subcategory, quantity: 1, customDetails: '' }]
+          subcategory: [...prev.subcategory, { key: subcategory, quantity: 1 }]
         };
       }
     });
@@ -289,15 +268,6 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
       ...prev,
       subcategory: prev.subcategory.map(item =>
         item.key === subcategory ? { ...item, quantity: Math.max(1, quantity) } : item
-      )
-    }));
-  };
-
-  const handleCustomDetailsChange = (subcategory: string, customDetails: string) => {
-    setFormData(prev => ({
-      ...prev,
-      subcategory: prev.subcategory.map(item =>
-        item.key === subcategory ? { ...item, customDetails } : item
       )
     }));
   };
@@ -313,7 +283,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
     onClose();
   };
 
-  const availableSubcategories = [...deptItemsData.map(i => i.key), 'other'];
+  const availableSubcategories = deptItemsData.map(i => i.key);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -372,16 +342,6 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
                           {getUnitType(sub)}
                         </span>
                       </div>
-                      
-                      {/* Custom details input for "other" option */}
-                      {sub === 'other' && (
-                        <Input
-                          placeholder="اكتب وصف العنصر المخصص"
-                          value={formData.subcategory.find(item => item.key === sub)?.customDetails || ''}
-                          onChange={(e) => handleCustomDetailsChange(sub, e.target.value)}
-                          className="text-sm"
-                        />
-                      )}
                     </div>
                   )}
                 </div>
@@ -395,10 +355,7 @@ const EditRequestModal = ({ request, isOpen, onClose, onUpdate }: EditRequestMod
                 {formData.subcategory.map((item, index) => (
                   <div key={index} className="flex items-center space-x-1 space-x-reverse bg-info/15 text-info px-2 py-1 rounded-full text-xs">
                     <span>
-                      {item.key === 'other' && item.customDetails 
-                        ? `${item.customDetails} (${item.quantity} عنصر)`
-                        : `${subcategoryLabels[item.key] || item.key} (${item.quantity} ${getUnitType(item.key)})`
-                      }
+                      {`${subcategoryLabels[item.key] || item.key} (${item.quantity} ${getUnitType(item.key)})`}
                     </span>
                     <button
                       type="button"

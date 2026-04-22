@@ -92,20 +92,18 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
   }, [formData.department]);
 
   const subcategoryLabels = useMemo(() => {
-    const map: Record<string, string> = { 'other': 'أخرى' };
+    const map: Record<string, string> = {};
     currentItems.forEach(item => { map[item.key] = item.labelAr; });
     return map;
   }, [currentItems]);
 
   const getUnitTypeForSubcategory = (subcategory: string): string => {
-    if (subcategory === 'other') return 'عنصر';
     const item = currentItems.find(i => i.key === subcategory);
     return item?.defaultUnit || 'قطعة';
   };
 
-  // قائمة subcategories للقسم الحالي (تشمل "other")
   const currentSubcategories = useMemo(() => {
-    return [...currentItems.map(i => i.key), 'other'];
+    return currentItems.map(i => i.key);
   }, [currentItems]);
 
   // اللون والأيقونة يجيان من API ديناميكياً
@@ -178,26 +176,12 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
       return false;
     }
 
-    // Check for custom details validation for "other" options
-    const missingCustomDetails = formData.subcategoryQuantities.filter(item => 
-      item.subcategory === 'other' && (!item.customDetails || !item.customDetails.trim())
-    );
-    if (missingCustomDetails.length > 0) {
-      toast({
-        title: "تفاصيل مفقودة",
-        description: "يرجى إدخال تفاصيل العنصر المخصص لجميع الخيارات 'أخرى'.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    // إنشاء تفاصيل العناصر المطلوبة بدقة
     const detailedItems = formData.subcategoryQuantities.map(item => ({
-      itemName: item.subcategory === 'other' ? item.customDetails || 'أخرى' : subcategoryLabels[item.subcategory] || item.subcategory,
+      itemName: subcategoryLabels[item.subcategory] || item.subcategory,
       originalKey: item.subcategory,
       quantity: item.quantity,
       unitType: getUnitTypeForSubcategory(item.subcategory),
-      displayText: `${item.subcategory === 'other' ? item.customDetails : subcategoryLabels[item.subcategory] || item.subcategory} (${item.quantity} ${getUnitTypeForSubcategory(item.subcategory)})`
+      displayText: `${subcategoryLabels[item.subcategory] || item.subcategory} (${item.quantity} ${getUnitTypeForSubcategory(item.subcategory)})`
     }));
 
     const request = {
@@ -597,7 +581,7 @@ const RequestForm = ({ onSubmit, userData }: RequestFormProps) => {
                   {formData.subcategoryQuantities.map((item) => (
                     <div key={item.subcategory} className="ms-4 flex justify-between text-xs bg-card p-2 rounded">
                       <span>
-                        {item.subcategory === 'other' ? item.customDetails : subcategoryLabels[item.subcategory] || item.subcategory}
+                        {subcategoryLabels[item.subcategory] || item.subcategory}
                       </span>
                       <span className="font-bold">{item.quantity} {getUnitTypeForSubcategory(item.subcategory)}</span>
                     </div>

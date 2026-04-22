@@ -121,21 +121,6 @@ const ItemsSidebar = ({
                     {/* Quantity Controls - Only show if selected */}
                     {selected && item && (
                       <div className="ms-8 space-y-3 bg-muted/50 rounded-lg p-3 border border-border">
-                        {/* Custom Details for "other" */}
-                        {sub === 'other' && (
-                          <div className="space-y-1">
-                            <Label className="text-xs font-medium text-foreground">
-                              تفاصيل العنصر المخصص:
-                            </Label>
-                            <Input
-                              placeholder="اكتب وصف العنصر..."
-                              value={item.customDetails || ''}
-                              onChange={(e) => onCustomDetailsChange(sub, e.target.value)}
-                              className="text-sm border-border focus:border-primary"
-                            />
-                          </div>
-                        )}
-                        
                         {/* Quantity Controls */}
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-medium text-foreground">

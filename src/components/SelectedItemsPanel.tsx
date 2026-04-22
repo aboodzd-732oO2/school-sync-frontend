@@ -69,20 +69,12 @@ const SelectedItemsPanel = ({
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 space-x-reverse mb-2">
                       <h4 className="font-bold text-foreground">
-                        {item.subcategory === 'other' && item.customDetails
-                          ? item.customDetails
-                          : subcategoryLabels[item.subcategory] || item.subcategory}
+                        {subcategoryLabels[item.subcategory] || item.subcategory}
                       </h4>
                       <Badge className="bg-muted/50 text-primary border-primary/30">
                         {item.quantity} {getUnitType(item.subcategory)}
                       </Badge>
                     </div>
-                    
-                    {item.subcategory === 'other' && item.customDetails && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        نوع: {subcategoryLabels[item.subcategory]}
-                      </p>
-                    )}
                   </div>
                   
                   <Button

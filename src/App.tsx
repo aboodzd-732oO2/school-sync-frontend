@@ -22,6 +22,7 @@ const App = () => (
             <Route path="/submit" element={<Index />} />
             <Route path="/reports" element={<Index />} />
             <Route path="/inventory" element={<Index />} />
+            <Route path="/inventory/alerts" element={<Index />} />
             <Route path="/inventory/history" element={<Index />} />
             <Route path="/notifications" element={<Index />} />
             <Route path="/settings" element={<Index />} />

@@ -12,6 +12,7 @@ import WarehouseActiveRequestsPage from "./warehouse/ActiveRequests";
 import WarehouseRequestsHistoryPage from "./warehouse/RequestsHistory";
 import WarehouseInventoryPage from "./warehouse/Inventory";
 import WarehouseInventoryHistoryPage from "./warehouse/InventoryHistory";
+import WarehouseInventoryAlertsPage from "./warehouse/InventoryAlerts";
 import WarehouseSettingsPage from "./warehouse/Settings";
 import WarehouseNotificationsPage from "./warehouse/Notifications";
 import { auth, requests as requestsApi, warehouse as warehouseApi, removeToken } from "@/services/api";
@@ -299,6 +300,9 @@ const Index = () => {
   } else if (path === '/inventory/history') {
     if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
     content = <WarehouseInventoryHistoryPage user={user} />;
+  } else if (path === '/inventory/alerts') {
+    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
+    content = <WarehouseInventoryAlertsPage />;
   } else if (path === '/settings') {
     if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
     content = <WarehouseSettingsPage user={user} />;

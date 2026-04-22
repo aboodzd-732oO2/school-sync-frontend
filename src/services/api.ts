@@ -72,6 +72,7 @@ export const warehouse = {
 
 // ──────────── Inventory ────────────
 import type { InventoryMovement, PaginatedMovements } from '@/types/inventoryMovement';
+import type { InventoryAlertsResponse } from '@/types/inventoryAlerts';
 
 export const inventory = {
   list: (filters?: Record<string, string>) => {
@@ -82,6 +83,7 @@ export const inventory = {
   update: (id: number, body: any) => request(`/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   remove: (id: number) => request(`/inventory/${id}`, { method: 'DELETE' }),
   lowStock: () => request('/inventory/low-stock'),
+  alerts: (): Promise<InventoryAlertsResponse> => request('/inventory/alerts'),
   movements: (filters?: Record<string, string>): Promise<PaginatedMovements> => {
     const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
     return request(`/inventory/movements${params}`);

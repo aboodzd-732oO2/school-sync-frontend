@@ -3,7 +3,7 @@ import {
   BarChart3, Users, Building2, Warehouse, FolderTree, Package,
   MapPin, School, Ruler, Flag, Map, Lock, ScrollText,
   Plus, FileText, GraduationCap, LayoutDashboard, Activity, History,
-  Settings as SettingsIcon,
+  Settings as SettingsIcon, Bell,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -89,6 +89,7 @@ const warehouseNav: NavGroup[] = [
   {
     label: "النظام",
     items: [
+      { label: "الإشعارات", href: "/notifications", icon: Bell },
       { label: "الإعدادات", href: "/settings", icon: SettingsIcon },
     ],
   },

@@ -114,7 +114,10 @@ export const notifications = {
 
 // ──────────── Reports ────────────
 export const reports = {
-  list: () => request('/reports'),
+  list: (filters?: Record<string, string>) => {
+    const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
+    return request(`/reports${params}`);
+  },
   generate: () => request('/reports/generate', { method: 'POST' }),
   getById: (id: number) => request(`/reports/${id}`),
 };

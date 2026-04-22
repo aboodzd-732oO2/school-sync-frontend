@@ -71,6 +71,12 @@ const institutionNav: NavGroup[] = [
     ],
   },
   {
+    label: "المستودعات",
+    items: [
+      { label: "المستودعات المتاحة", href: "/warehouses", icon: Warehouse },
+    ],
+  },
+  {
     label: "التقارير",
     items: [
       { label: "التقارير الشهرية", href: "/reports", icon: FileText },

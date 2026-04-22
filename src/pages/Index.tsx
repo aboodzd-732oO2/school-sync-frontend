@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation, useNavigate, Navigate } from "react-router-dom";
-import Dashboard from "@/components/Dashboard";
 import RequestForm from "@/components/RequestForm";
 import Reports from "@/components/Reports";
 import LoginForm from "@/components/LoginForm";
 import { AppShell } from "@/components/layout/AppShell";
+
+// Institution pages
+import InstitutionDashboardPage from "./institution/Dashboard";
+import InstitutionActiveRequestsPage from "./institution/ActiveRequests";
+import InstitutionRequestsHistoryPage from "./institution/RequestsHistory";
 
 // Warehouse pages
 import WarehouseDashboardPage from "./warehouse/Dashboard";
@@ -87,8 +91,11 @@ type UserData = {
   institutionName?: never;
 });
 
-const ACTIVE_STATUSES = ['pending', 'in-progress', 'ready-for-pickup', 'undelivered'];
+const WAREHOUSE_ACTIVE_STATUSES = ['pending', 'in-progress', 'ready-for-pickup', 'undelivered'];
+// Statuses that warrant a "new" badge for the institution — changes triggered by warehouse
+const INSTITUTION_BADGE_STATUSES = ['in-progress', 'ready-for-pickup', 'rejected'];
 const WAREHOUSE_ACTIVE_LASTVISIT_KEY = 'warehouse_active_lastvisit_ms';
+const INSTITUTION_ACTIVE_LASTVISIT_KEY = 'institution_active_lastvisit_ms';
 
 const Index = () => {
   const location = useLocation();
@@ -98,6 +105,9 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [warehouseActiveLastVisit, setWarehouseActiveLastVisit] = useState<number>(() =>
     Number(localStorage.getItem(WAREHOUSE_ACTIVE_LASTVISIT_KEY) || '0'),
+  );
+  const [institutionActiveLastVisit, setInstitutionActiveLastVisit] = useState<number>(() =>
+    Number(localStorage.getItem(INSTITUTION_ACTIVE_LASTVISIT_KEY) || '0'),
   );
 
   const loadRequests = useCallback(async () => {
@@ -146,12 +156,16 @@ const Index = () => {
     navigate('/');
   };
 
-  // Mark "/requests/active" as visited when warehouse user lands there
+  // Mark "/requests/active" as visited — stamp the correct role's key
   useEffect(() => {
-    if (user?.userType === 'warehouse' && location.pathname === '/requests/active') {
-      const now = Date.now();
+    if (location.pathname !== '/requests/active') return;
+    const now = Date.now();
+    if (user?.userType === 'warehouse') {
       localStorage.setItem(WAREHOUSE_ACTIVE_LASTVISIT_KEY, String(now));
       setWarehouseActiveLastVisit(now);
+    } else if (user?.userType === 'institution') {
+      localStorage.setItem(INSTITUTION_ACTIVE_LASTVISIT_KEY, String(now));
+      setInstitutionActiveLastVisit(now);
     }
   }, [location.pathname, user]);
 
@@ -161,10 +175,21 @@ const Index = () => {
     const deptKey = user.departmentKey || 'materials';
     return requests.filter(r =>
       r.department === deptKey &&
-      ACTIVE_STATUSES.includes(r.status) &&
+      WAREHOUSE_ACTIVE_STATUSES.includes(r.status) &&
       new Date(r.dateSubmitted).getTime() > warehouseActiveLastVisit,
     ).length;
   }, [user, requests, warehouseActiveLastVisit]);
+
+  // Badge count: institution active requests whose status *changed* after last visit
+  // Uses updatedAt (fallback to dateSubmitted) because new actions on existing requests matter most.
+  const institutionActiveBadge = useMemo(() => {
+    if (user?.userType !== 'institution') return 0;
+    return requests.filter(r => {
+      if (!INSTITUTION_BADGE_STATUSES.includes(r.status) && r.status !== 'pending') return false;
+      const ts = (r as any).updatedAt ? new Date((r as any).updatedAt).getTime() : new Date(r.dateSubmitted).getTime();
+      return ts > institutionActiveLastVisit;
+    }).length;
+  }, [user, requests, institutionActiveLastVisit]);
 
   useRequestsRealtime({
     onNew: useCallback((r: Request) => {
@@ -279,7 +304,7 @@ const Index = () => {
     else return <Navigate to="/admin/stats" replace />;
 
     return (
-      <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge }}>
+      <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge, institutionActive: institutionActiveBadge }}>
         {content}
       </AppShell>
     );
@@ -313,24 +338,50 @@ const Index = () => {
     if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
     return <Navigate to="/requests/active" replace />;
   } else if (path === '/requests/active') {
-    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
-    content = (
-      <WarehouseActiveRequestsPage
-        requests={requests}
-        user={user}
-        onUpdateStatus={handleUpdateStatus}
-        onUpdateRequest={handleUpdateRequest}
-      />
-    );
+    if (user.userType === 'warehouse') {
+      content = (
+        <WarehouseActiveRequestsPage
+          requests={requests}
+          user={user}
+          onUpdateStatus={handleUpdateStatus}
+          onUpdateRequest={handleUpdateRequest}
+        />
+      );
+    } else if (user.userType === 'institution') {
+      content = (
+        <InstitutionActiveRequestsPage
+          requests={requests}
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteRequest={handleDeleteRequest}
+          onUpdateRequest={handleUpdateRequest}
+          user={user}
+        />
+      );
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   } else if (path === '/requests/history') {
-    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
-    content = <WarehouseRequestsHistoryPage requests={requests} user={user} />;
+    if (user.userType === 'warehouse') {
+      content = <WarehouseRequestsHistoryPage requests={requests} user={user} />;
+    } else if (user.userType === 'institution') {
+      content = (
+        <InstitutionRequestsHistoryPage
+          requests={requests}
+          onUpdateStatus={handleUpdateStatus}
+          onDeleteRequest={handleDeleteRequest}
+          onUpdateRequest={handleUpdateRequest}
+          user={user}
+        />
+      );
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   } else if (path === '/dashboard' || path === '/') {
     if (user.userType === 'warehouse') {
       content = <WarehouseDashboardPage requests={requests} user={user} />;
     } else {
       content = (
-        <Dashboard
+        <InstitutionDashboardPage
           requests={requests}
           onUpdateStatus={handleUpdateStatus}
           onDeleteRequest={handleDeleteRequest}
@@ -344,7 +395,7 @@ const Index = () => {
   }
 
   return (
-    <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge }}>
+    <AppShell user={user} onLogout={handleLogout} badges={{ warehouseActive: warehouseActiveBadge, institutionActive: institutionActiveBadge }}>
       {content}
     </AppShell>
   );

@@ -61,11 +61,18 @@ const adminNav: NavGroup[] = [
 
 const institutionNav: NavGroup[] = [
   {
-    label: "الرئيسية",
+    label: "الطلبات",
     items: [
-      { label: "لوحة التحكم", href: "/dashboard", icon: BarChart3 },
+      { label: "لوحة التحكم", href: "/dashboard", icon: LayoutDashboard },
+      { label: "الطلبات النشطة", href: "/requests/active", icon: Activity },
+      { label: "سجل الطلبات", href: "/requests/history", icon: History },
       { label: "طلب جديد", href: "/submit", icon: Plus },
-      { label: "التقارير", href: "/reports", icon: FileText },
+    ],
+  },
+  {
+    label: "التقارير",
+    items: [
+      { label: "التقارير الشهرية", href: "/reports", icon: FileText },
     ],
   },
 ];
@@ -106,8 +113,14 @@ export function AppSidebar({ userType, badges }: { userType: UserType; badges?: 
     location.pathname === href || location.pathname.startsWith(href + "/");
 
   const getBadge = (href: string): number | undefined => {
-    if (href === "/requests/active" && badges?.warehouseActive && badges.warehouseActive > 0) {
-      return badges.warehouseActive;
+    if (href === "/requests/active") {
+      const count =
+        userType === "warehouse"
+          ? badges?.warehouseActive
+          : userType === "institution"
+            ? badges?.institutionActive
+            : undefined;
+      return count && count > 0 ? count : undefined;
     }
     return undefined;
   };

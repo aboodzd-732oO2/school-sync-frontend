@@ -13,6 +13,7 @@ interface AppShellUser {
 
 export interface SidebarBadges {
   warehouseActive?: number;
+  institutionActive?: number;
 }
 
 interface Props {

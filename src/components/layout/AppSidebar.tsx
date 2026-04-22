@@ -76,6 +76,12 @@ const institutionNav: NavGroup[] = [
       { label: "التقارير الشهرية", href: "/reports", icon: FileText },
     ],
   },
+  {
+    label: "النظام",
+    items: [
+      { label: "الإعدادات", href: "/settings", icon: SettingsIcon },
+    ],
+  },
 ];
 
 const warehouseNav: NavGroup[] = [

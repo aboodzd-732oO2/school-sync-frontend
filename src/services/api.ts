@@ -53,6 +53,8 @@ export const institution = {
 };
 
 // ──────────── Requests ────────────
+import type { RequestTimelineEntry } from '@/types/requestTimeline';
+
 export const requests = {
   list: (filters?: Record<string, string>) => {
     const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
@@ -60,6 +62,7 @@ export const requests = {
   },
   create: (body: any) => request('/requests', { method: 'POST', body: JSON.stringify(body) }),
   getById: (id: string) => request(`/requests/${id}`),
+  timeline: (id: string): Promise<RequestTimelineEntry[]> => request(`/requests/${id}/timeline`),
   update: (id: string, body: any) => request(`/requests/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   updateStatus: (id: string, body: any) => request(`/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
   remove: (id: string) => request(`/requests/${id}`, { method: 'DELETE' }),
@@ -74,6 +77,8 @@ export const warehouse = {
     return request(`/warehouse/requests${params}`);
   },
   updateRequestStatus: (id: string, body: any) => request(`/warehouse/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
+  requestTimeline: (id: string): Promise<RequestTimelineEntry[]> =>
+    request(`/warehouse/requests/${id}/timeline`),
   stats: (days?: number): Promise<WarehouseStatsResponse> =>
     request(`/warehouse/stats${days && days > 0 ? `?days=${days}` : ''}`),
   statsTrends: (days = 30): Promise<WarehouseStatsTrendPoint[]> =>

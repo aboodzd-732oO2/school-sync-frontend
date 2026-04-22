@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Calendar, Search, FolderTree, Filter, X, CheckCircle, Eye, History,
-  Package, Ban, Clock, Warehouse as WarehouseIcon,
+  Search, FolderTree, Filter, X, CheckCircle, Eye, History,
+  Package, Ban, Clock, Warehouse as WarehouseIcon, Copy,
 } from "lucide-react";
-import RequestDetailsModal from "@/components/RequestDetailsModal";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useToast } from "@/hooks/use-toast";
+import { requests as requestsApi } from "@/services/api";
 import { usePriorities, useDepartments } from "@/hooks/useLookups";
 import { getStatusLabel, getStatusClass, getStatusIcon as getStatusIconFromConfig } from "@/lib/statusConfig";
 import type { DashboardProps } from "@/types/dashboard";
@@ -34,12 +36,45 @@ const formatDateTime = (iso?: string) =>
 const InstitutionRequestsHistoryPage = ({ requests }: DashboardProps) => {
   const { getLabel: getPriorityLabel, getColor: getPriorityHexColor } = usePriorities();
   const { getLabel: getDeptLabel } = useDepartments();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [cloningId, setCloningId] = useState<string | null>(null);
+
+  const handleClone = async (request: any) => {
+    setCloningId(request.id);
+    try {
+      await requestsApi.create({
+        title: `نسخة من: ${request.title}`,
+        description: request.description,
+        impact: request.impact,
+        priority: request.priority,
+        status: "draft",
+        quantity: request.quantity,
+        studentsAffected: request.studentsAffected,
+        unitType: request.unitType,
+        subcategory: request.subcategory,
+        departmentKey: request.department,
+        requestedItems: request.requestedItems ?? [],
+      });
+      toast({
+        title: "تم إنشاء المسودة",
+        description: "تم تكرار الطلب كمسودة — يمكنك تعديلها قبل الإرسال",
+      });
+      navigate("/drafts");
+    } catch (err: any) {
+      toast({
+        title: "فشل التكرار",
+        description: err?.message ?? "حدث خطأ أثناء إنشاء المسودة",
+        variant: "destructive",
+      });
+    } finally {
+      setCloningId(null);
+    }
+  };
 
   const historyRequests = useMemo(
     () => requests.filter((r) => HISTORY_STATUSES.includes(r.status)),
@@ -286,18 +321,29 @@ const InstitutionRequestsHistoryPage = ({ requests }: DashboardProps) => {
                         </div>
                       </div>
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setIsModalOpen(true);
-                        }}
-                        className="shrink-0 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-                      >
-                        <Eye className="size-4 me-1" />
-                        التفاصيل
-                      </Button>
+                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                        >
+                          <Link to={`/requests/${request.id}`}>
+                            <Eye className="size-4 me-1" />
+                            التفاصيل
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleClone(request)}
+                          disabled={cloningId === request.id}
+                          className="transition-colors hover:border-info hover:bg-info/10 hover:text-info"
+                        >
+                          <Copy className="size-4 me-1" />
+                          {cloningId === request.id ? "..." : "تكرار"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -306,12 +352,6 @@ const InstitutionRequestsHistoryPage = ({ requests }: DashboardProps) => {
           )}
         </CardContent>
       </Card>
-
-      <RequestDetailsModal
-        request={selectedRequest}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   );
 };

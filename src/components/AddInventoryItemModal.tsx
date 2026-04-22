@@ -24,7 +24,6 @@ interface AddInventoryItemModalProps {
 interface ItemToAdd {
   id: string;
   selectedItem: string;
-  customItemName: string;
   quantity: number;
   minThreshold: number;
 }
@@ -33,7 +32,6 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
   const [itemsToAdd, setItemsToAdd] = useState<ItemToAdd[]>([{
     id: '1',
     selectedItem: '',
-    customItemName: '',
     quantity: 0,
     minThreshold: 0
   }]);
@@ -44,7 +42,6 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
     const newItem: ItemToAdd = {
       id: Date.now().toString(),
       selectedItem: '',
-      customItemName: '',
       quantity: 0,
       minThreshold: 0
     };
@@ -68,9 +65,9 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
   // التحقق من وجود عناصر مكررة
   const checkForDuplicates = (): boolean => {
     const itemNames: string[] = [];
-    
+
     for (const item of itemsToAdd) {
-      const itemName = item.selectedItem === 'أخرى' ? item.customItemName : item.selectedItem;
+      const itemName = item.selectedItem;
       if (itemName) {
         const normalizedName = itemName.toLowerCase().trim();
         if (itemNames.includes(normalizedName)) {
@@ -79,7 +76,7 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
         itemNames.push(normalizedName);
       }
     }
-    
+
     return false;
   };
 
@@ -98,8 +95,8 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
     if (Object.keys(newErrors).length === 0) {
       // إضافة جميع العناصر
       itemsToAdd.forEach(item => {
-        const itemName = item.selectedItem === 'أخرى' ? item.customItemName : item.selectedItem;
-        
+        const itemName = item.selectedItem;
+
         onAdd({
           name: itemName,
           category: itemName,
@@ -113,7 +110,6 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
       setItemsToAdd([{
         id: '1',
         selectedItem: '',
-        customItemName: '',
         quantity: 0,
         minThreshold: 0
       }]);
@@ -126,7 +122,6 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
     setItemsToAdd([{
       id: '1',
       selectedItem: '',
-      customItemName: '',
       quantity: 0,
       minThreshold: 0
     }]);
@@ -136,7 +131,7 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
 
   // العناصر من API حسب القسم
   const { items: deptItems } = useDepartmentItems(department);
-  const availableItems = [...deptItems.map(i => i.labelAr), 'أخرى'];
+  const availableItems = deptItems.map(i => i.labelAr);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -163,8 +158,6 @@ const AddInventoryItemModal = ({ isOpen, onClose, onAdd, department, warehouseNa
                 key={item.id}
                 item={item}
                 index={index}
-                department={department}
-                warehouseName={warehouseName}
                 canRemove={itemsToAdd.length > 1}
                 errors={errors}
                 availableItems={availableItems}

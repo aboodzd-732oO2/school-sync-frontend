@@ -1,8 +1,6 @@
-
 interface ItemToAdd {
   id: string;
   selectedItem: string;
-  customItemName: string;
   quantity: number;
   minThreshold: number;
 }
@@ -13,10 +11,6 @@ export const validateInventoryForm = (itemsToAdd: ItemToAdd[]): Record<string, s
   itemsToAdd.forEach((item) => {
     if (!item.selectedItem) {
       newErrors[`selectedItem_${item.id}`] = 'يجب اختيار عنصر من القائمة';
-    }
-
-    if (item.selectedItem === 'أخرى' && !item.customItemName.trim()) {
-      newErrors[`customItemName_${item.id}`] = 'يجب كتابة وصف العنصر المخصص';
     }
 
     if (item.quantity <= 0) {

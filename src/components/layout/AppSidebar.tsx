@@ -79,6 +79,7 @@ const institutionNav: NavGroup[] = [
   {
     label: "النظام",
     items: [
+      { label: "الإشعارات", href: "/notifications", icon: Bell },
       { label: "الإعدادات", href: "/settings", icon: SettingsIcon },
     ],
   },

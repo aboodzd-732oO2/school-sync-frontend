@@ -11,6 +11,7 @@ import InstitutionActiveRequestsPage from "./institution/ActiveRequests";
 import InstitutionRequestsHistoryPage from "./institution/RequestsHistory";
 import InstitutionDraftsPage from "./institution/Drafts";
 import InstitutionSettingsPage from "./institution/Settings";
+import InstitutionNotificationsPage from "./institution/Notifications";
 
 // Warehouse pages
 import WarehouseDashboardPage from "./warehouse/Dashboard";
@@ -345,8 +346,13 @@ const Index = () => {
       return <Navigate to="/dashboard" replace />;
     }
   } else if (path === '/notifications') {
-    if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
-    content = <WarehouseNotificationsPage />;
+    if (user.userType === 'warehouse') {
+      content = <WarehouseNotificationsPage />;
+    } else if (user.userType === 'institution') {
+      content = <InstitutionNotificationsPage />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   } else if (path === '/requests') {
     if (user.userType !== 'warehouse') return <Navigate to="/dashboard" replace />;
     return <Navigate to="/requests/active" replace />;
